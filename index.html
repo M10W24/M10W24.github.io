@@ -1,340 +1,929 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-theme="nocturne">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Attention Check</title>
-<style>
-  :root {
-    --bg: #f6f7f9; --card: #ffffff; --text: #16181d; --muted: #6b7280; --line: #e4e7ec;
-    --good: #16a34a; --warn: #d97706; --bad: #dc2626; --idle: #9ca3af; --accent: #2563eb;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #0e1014; --card: #171a21; --text: #e8eaee; --muted: #9aa1ad; --line: #272b35;
-      --good: #22c55e; --warn: #f59e0b; --bad: #ef4444; --idle: #6b7280; --accent: #60a5fa; }
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text);
-    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  main { max-width: 920px; margin: 0 auto; padding: 32px 16px 48px; }
-  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em; }
-  .sub { color: var(--muted); margin: 0 0 24px; }
-  .grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
-  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
-  .video-wrap { position: relative; aspect-ratio: 4/3; background: #000; border-radius: 10px; overflow: hidden; }
-  video, #overlay { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-  .video-wrap.hidden video { visibility: hidden; }
-  .placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: #aaa; text-align: center; padding: 20px; }
-  .status { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-  .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--idle); flex: none; transition: background .2s; }
-  .status-text { font-size: 22px; font-weight: 650; }
-  .reason { color: var(--muted); font-size: 14px; min-height: 21px; margin: -8px 0 14px 30px; }
-  .meter { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; margin: 6px 0 16px; }
-  .meter > div { height: 100%; width: 0%; background: var(--good); transition: width .2s, background .2s; }
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-  .stat { border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
-  .stat b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
-  .stat span { color: var(--muted); font-size: 12px; }
-  .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
-  #timeline { width: 100%; height: 28px; display: block; border-radius: 6px; background: var(--line); margin: 6px 0 16px; }
-  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  button { font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--text);
-    padding: 8px 14px; border-radius: 9px; cursor: pointer; }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-  button:disabled { opacity: .5; cursor: default; }
-  label.toggle { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 14px; cursor: pointer; }
-  .note { color: var(--muted); font-size: 13px; margin-top: 20px; }
-  body.alert { box-shadow: inset 0 0 0 6px var(--bad); }
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="connect-src https://cdn.jsdelivr.net https://storage.googleapis.com; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; object-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#04080A">
+<meta name="description" content="A focus timer with a pulse. Your webcam reads attention on this device, and a glowing organism grows while you stay with your work.">
+<title>Hypha — focus, grown in light</title>
+<link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230B1719'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%237CF5D0'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400..600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<script src="js/core.js" defer></script>
+<script src="js/detector.js" defer></script>
+<script src="js/session.js" defer></script>
+<script src="js/visual.js" defer></script>
+<script src="js/audio.js" defer></script>
+<script src="js/keepsake.js" defer></script>
+<script src="js/history.js" defer></script>
+<script src="js/app.js" defer></script>
 </head>
-<body>
-<main>
-  <h1>Are you paying attention?</h1>
-  <p class="sub">Uses your camera to check if you're looking at the screen. Everything runs in your browser. No video leaves your device.</p>
+<!-- SPEC-GAP: body[data-screen] and data-motion are left unset in markup; app.js sets them at boot.
+     Until then CSS shows no screen, no top bar and no Eye (just the dark stage). -->
+<!-- SPEC-GAP: #recoverBanner sits in the setup column directly above #setupCard, so when it is shown
+     the card starts one banner lower than the §2.4.2 formula (the banner takes that slot). -->
+<body data-phase="idle" data-state="none" data-chrome="full" data-cam="off">
 
-  <div class="grid">
-    <div class="card">
-      <div class="video-wrap" id="videoWrap">
-        <video id="video" playsinline muted></video>
-        <canvas id="overlay"></canvas>
-        <div class="placeholder" id="placeholder">Press <b>&nbsp;Start camera&nbsp;</b> to begin</div>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <button class="primary" id="startBtn">Start camera</button>
-        <button id="calBtn" disabled>Recalibrate</button>
-        <label class="toggle"><input type="checkbox" id="showVideo" checked> Show video</label>
-        <label class="toggle"><input type="checkbox" id="sound"> Beep when distracted</label>
-      </div>
-    </div>
+<!-- ============================================================ -->
+<!-- Persistent layers                                             -->
+<!-- ============================================================ -->
+<canvas id="stage" aria-hidden="true"></canvas>
+<div id="vignette" aria-hidden="true"></div>
+<div id="grain" aria-hidden="true"></div>
+<video id="camVideo" playsinline muted autoplay aria-hidden="true" tabindex="-1"></video>
 
-    <div class="card">
-      <div class="status"><div class="dot" id="dot"></div><div class="status-text" id="statusText">Not started</div></div>
-      <div class="reason" id="reason"></div>
+<!-- Icon sprite: 24x24, stroke currentColor 1.5, round caps and joins. -->
+<svg id="icons" hidden xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <symbol id="i-spore" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/>
+    <path d="M12 9.2Q9.8 5.9 12 2.6"/>
+    <path d="M14.8 11.1Q17.1 8 21 9.1"/>
+    <path d="M13.7 14.4Q17.4 15.6 17.6 19.7"/>
+    <path d="M10.3 14.4Q10.2 18.3 6.4 19.7"/>
+    <path d="M9.2 11.1Q5.5 12.2 3 9.1"/>
+    <circle cx="12" cy="2.6" r=".7" fill="currentColor" stroke="none"/>
+    <circle cx="21" cy="9.1" r=".7" fill="currentColor" stroke="none"/>
+    <circle cx="17.6" cy="19.7" r=".7" fill="currentColor" stroke="none"/>
+    <circle cx="6.4" cy="19.7" r=".7" fill="currentColor" stroke="none"/>
+    <circle cx="3" cy="9.1" r=".7" fill="currentColor" stroke="none"/>
+  </symbol>
+  <symbol id="i-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 9.5h3l4.5-4v13L7 14.5H4z"/>
+    <path d="M15.3 9.2a4 4 0 0 1 0 5.6"/>
+    <path d="M17.9 6.6a7.6 7.6 0 0 1 0 10.8"/>
+  </symbol>
+  <symbol id="i-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 9.5h3l4.5-4v13L7 14.5H4z"/>
+    <path d="M15.5 9.8l4.4 4.4M19.9 9.8l-4.4 4.4"/>
+  </symbol>
+  <symbol id="i-popout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V14"/>
+    <path d="M14.5 4.5h5v5"/>
+    <path d="M19.5 4.5L11.5 12.5"/>
+  </symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 7h8.5M17.5 7H20M4 12h2.5M11.5 12H20M4 17h10.5M19.5 17H20"/>
+    <circle cx="15" cy="7" r="2.3"/>
+    <circle cx="9" cy="12" r="2.3"/>
+    <circle cx="17" cy="17" r="2.3"/>
+  </symbol>
+  <symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="8.75"/>
+    <path d="M9.6 9.4a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1.1.8-1.1 1.5v.5"/>
+    <circle cx="12" cy="16.6" r=".9" fill="currentColor" stroke="none"/>
+  </symbol>
+  <symbol id="i-jar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7.5 3.5h9"/>
+    <path d="M9 3.5v2.3a1 1 0 0 1-.6.9A4.5 4.5 0 0 0 5.5 11v7A2.5 2.5 0 0 0 8 20.5h8a2.5 2.5 0 0 0 2.5-2.5v-7a4.5 4.5 0 0 0-2.9-4.3 1 1 0 0 1-.6-.9V3.5"/>
+    <path d="M12 17.8v-4.6"/>
+    <path d="M12 15.4c-1.7 0-2.7-.9-2.9-2.5 1.6 0 2.7.9 2.9 2.5z"/>
+    <path d="M12 14.2c.2-1.4 1.1-2.2 2.6-2.3-.1 1.5-1 2.3-2.6 2.3z"/>
+  </symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="7" y="5.5" width="3" height="13" rx="1.2"/>
+    <rect x="14" y="5.5" width="3" height="13" rx="1.2"/>
+  </symbol>
+  <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 5.6v12.8a.9.9 0 0 0 1.4.8l9.9-6.4a.9.9 0 0 0 0-1.5L9.4 4.9A.9.9 0 0 0 8 5.6z"/>
+  </symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="6" y="6" width="12" height="12" rx="3"/>
+  </symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19.2 4.8C10.6 4.9 5.2 9.4 5.2 16.4c0 1 .1 1.8.3 2.6.8.2 1.6.3 2.6.3 7 0 11.4-5.3 11.1-14.5z"/>
+    <path d="M4.5 19.8c3-4.4 6.6-8 10.6-10.8"/>
+    <path d="M9.6 14.6l3.3.4M12.1 11.9l2.6-.2"/>
+  </symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.6 12S6.1 5.6 12 5.6 21.4 12 21.4 12 17.9 18.4 12 18.4 2.6 12 2.6 12z"/>
+    <circle cx="12" cy="12" r="3"/>
+    <circle cx="12" cy="12" r=".9" fill="currentColor" stroke="none"/>
+  </symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 10.2c2.4 3.3 5.5 5 9 5s6.6-1.7 9-5"/>
+    <path d="M6 13.3l-1.5 2.1M9.2 14.8l-.7 2.4M12 15.2v2.6M14.8 14.8l.7 2.4M18 13.3l1.5 2.1"/>
+  </symbol>
+  <symbol id="i-lens-cap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="11" cy="11" r="7.5"/>
+    <circle cx="11" cy="11" r="3.6"/>
+    <path d="M11 3.5v1.6M11 16.9v1.6M3.5 11h1.6M16.9 11h1.6"/>
+    <path d="M16.4 16.4c1.2 1.3 2.3 2.6 4.1 3.6"/>
+  </symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3.4l7 2.7v5.3c0 4.4-2.9 7.8-7 9.2-4.1-1.4-7-4.8-7-9.2V6.1z"/>
+    <path d="M9 12.1l2.1 2.1 3.9-4.1"/>
+  </symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 12.6l4.4 4.4L19 7.4"/>
+  </symbol>
+  <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>
+  </symbol>
+  <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 4v11"/>
+    <path d="M7.5 10.6L12 15l4.5-4.4"/>
+    <path d="M5 19.5h14"/>
+  </symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 15V4"/>
+    <path d="M7.5 8.4L12 4l4.5 4.4"/>
+    <path d="M5 19.5h14"/>
+  </symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4.5 7h15M10 4h4"/>
+    <path d="M6.5 7l.8 11.2a2 2 0 0 0 2 1.8h5.4a2 2 0 0 0 2-1.8L17.5 7"/>
+    <path d="M10 11v5M14 11v5"/>
+  </symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14.5 6l-6 6 6 6"/>
+  </symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9.5 6l6 6-6 6"/>
+  </symbol>
+  <symbol id="i-notes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="5" y="3.5" width="14" height="17" rx="2.2"/>
+    <path d="M8.5 8h7M8.5 11.5h7M8.5 15h3.5"/>
+    <path d="M14.5 17.2c.9-1.6 1.9-2.5 3.2-2.9"/>
+  </symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/>
+    <path d="M19.6 4.4v4.2h-4.2"/>
+  </symbol>
+  <symbol id="i-feather" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7.2 16.8c0-7 4.6-11.7 12.4-12.3-.5 7.8-5.3 12.3-12.4 12.3z"/>
+    <path d="M4.5 19.5L15.2 8.8"/>
+    <path d="M10.6 13.4h3.9M12.7 11.3h4.2"/>
+  </symbol>
+</svg>
 
-      <div class="label">Attention score</div>
-      <div class="meter"><div id="meterFill"></div></div>
-
-      <div class="stats">
-        <div class="stat"><b id="focusPct">–</b><span>Time focused</span></div>
-        <div class="stat"><b id="distractions">0</b><span>Distractions</span></div>
-        <div class="stat"><b id="streak">0s</b><span>Current streak</span></div>
-      </div>
-
-      <div class="label">Last 60 seconds</div>
-      <canvas id="timeline"></canvas>
-
-      <button id="resetBtn">Reset stats</button>
-    </div>
+<!-- ============================================================ -->
+<!-- Global chrome                                                 -->
+<!-- ============================================================ -->
+<header id="topbar" class="topbar">
+  <div class="topbar-left">
+    <button id="brand" class="brand" type="button" aria-label="hypha, back to setup">
+      <svg class="icon brand-icon" aria-hidden="true"><use href="#i-spore"/></svg>
+      <span class="wordmark" aria-hidden="true">hypha</span>
+    </button>
+    <p id="todayStat" class="today-stat">Today —</p>
   </div>
+  <nav class="topbar-right" aria-label="Tools">
+    <button id="btnSound" class="icon-btn has-tip" type="button" aria-label="Sound" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-sound-off"/></svg></button>
+    <button id="btnPip" class="icon-btn has-tip" type="button" aria-label="Pop out"><svg class="icon" aria-hidden="true"><use href="#i-popout"/></svg></button>
+    <button id="btnHistory" class="icon-btn has-tip" type="button" aria-label="Terrarium"><svg class="icon" aria-hidden="true"><use href="#i-jar"/></svg></button>
+    <button id="btnSettings" class="icon-btn has-tip" type="button" aria-label="Settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg></button>
+    <button id="btnHelp" class="icon-btn has-tip" type="button" aria-label="Help &amp; shortcuts"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg></button>
+  </nav>
+</header>
 
-  <p class="note">How it works: a face-tracking model (MediaPipe) finds 478 points on your face. The page compares your head angle to a calibration taken when you first start, reads eye-direction and blink signals, and checks whether this tab is visible. Look at the screen for the first 2 seconds so it can calibrate. Works best with even lighting and your face fully in frame. Camera access requires the page to be served over https or opened from localhost/file.</p>
+<!-- The Eye: what the camera sees, as dots. Menu = preview mode, lens cap, privacy. -->
+<div class="eye-wrap">
+  <div id="eye" class="eye" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="false" aria-controls="eyeMenu" aria-label="Camera preview and lens cap">
+    <canvas id="eyeCanvas" class="eye-canvas" aria-hidden="true"></canvas>
+    <!-- SPEC-GAP: §2.3 says svg#eyeLid, but SVG elements have no .hidden property (HTMLElement only), so
+         app.js's `el.hidden = …` would never hide an <svg>. An HTML span wrapping the i-eye-off glyph keeps
+         the id and makes the hidden toggle work. -->
+    <span id="eyeLid" class="eye-lid" aria-hidden="true"><svg class="icon"><use href="#i-eye-off"/></svg></span>
+    <span id="eyePip" class="eye-pip" aria-hidden="true"></span>
+  </div>
+  <p id="eyeLabel" class="eye-label"><span class="eye-label-top">on-device</span><span id="eyeReq" class="eye-req">camera off</span></p>
+  <div id="eyeMenu" class="menu" role="menu" aria-label="Camera" hidden>
+    <button id="eyeModeMesh" class="menu-item" type="button" role="menuitemradio" aria-checked="true">Dots: what the model sees</button>
+    <button id="eyeModeVideo" class="menu-item" type="button" role="menuitemradio" aria-checked="false">Video: mirror (posterized)</button>
+    <button id="eyeModeOff" class="menu-item" type="button" role="menuitemradio" aria-checked="false">Hide preview</button>
+    <div role="separator" class="menu-sep"></div>
+    <button id="btnLens" class="menu-item" type="button" role="menuitem">Put the lens cap on</button>
+    <button id="btnPrivacy" class="menu-item" type="button" role="menuitem">How privacy works…</button>
+  </div>
+</div>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<div id="srStatus" class="sr-only" aria-live="polite"></div>
+<div id="srAlert" class="sr-only" role="alert"></div>
+<pre id="debugPanel" class="debug-panel" hidden></pre>
+
+<!-- ============================================================ -->
+<!-- Screens (app.js reveals exactly one)                          -->
+<!-- ============================================================ -->
+<main class="screens">
+  <!-- ======================= Intro ======================= -->
+  <section class="screen" id="screen-intro" hidden aria-label="Welcome to Hypha">
+    <p class="intro-mark" aria-hidden="true"><svg class="icon"><use href="#i-spore"/></svg><span class="wordmark">hypha</span></p>
+    <div id="introCard" class="card glass intro-card">
+      <button id="btnIntroSkip" class="btn btn-text btn-sm intro-skip" type="button">Skip</button>
+
+      <div id="introStep0" class="intro-step">
+        <p class="mono-label intro-kicker">01 · Germinate</p>
+        <h1 class="intro-h1">Your attention, grown into living light.</h1>
+        <p class="intro-body">Hypha is a focus timer with a pulse. While your face says you're with your work, a glowing network grows. Turn away and it flinches. Leave and it rests. Every blink sends a heartbeat of light through it.</p>
+      </div>
+
+      <div id="introStep1" class="intro-step" hidden>
+        <p class="mono-label intro-kicker">02 · Privacy</p>
+        <h2 class="intro-h2">The camera sees 478 dots, not you.</h2>
+        <p class="intro-body">Face tracking runs entirely in this tab. No video or images are recorded, stored, or sent: only focus numbers, kept on this device. Try it: once Hypha has loaded, go offline. It keeps working.</p>
+        <button id="btnIntroPrivacy" class="btn btn-text" type="button"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg><span class="btn-label">How privacy works</span></button>
+      </div>
+
+      <div id="introStep2" class="intro-step" hidden>
+        <p class="mono-label intro-kicker">03 · Signals</p>
+        <h2 class="intro-h2">It speaks in light.</h2>
+        <p class="intro-body">Watch what it does when attention moves.</p>
+        <div class="intro-demo">
+          <p id="introDemoWord" class="intro-demo-word" data-word="rooted">rooted</p>
+          <p id="introDemoGloss" class="intro-demo-gloss">Eyes on your work, so it grows.</p>
+        </div>
+      </div>
+
+      <div class="intro-foot">
+        <div id="introDots" class="dots" aria-hidden="true"><span class="dot" aria-current="step"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="intro-nav">
+          <button id="btnIntroBack" class="btn btn-ghost" type="button" hidden>Back</button>
+          <button id="btnIntroNext" class="btn btn-primary" type="button">Next</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= Setup ======================= -->
+  <section class="screen" id="screen-setup" hidden aria-labelledby="setupTitle">
+    <div class="setup-col">
+      <div id="recoverBanner" class="banner glass recover-banner" role="region" aria-label="Unfinished session" hidden>
+        <p id="recoverText" class="banner-text">An unfinished session was found.</p>
+        <div class="banner-actions">
+          <button id="btnRecoverSave" class="btn btn-primary btn-sm" type="button">Save it</button>
+          <button id="btnRecoverDiscard" class="btn btn-ghost btn-sm" type="button">Discard</button>
+        </div>
+      </div>
+
+      <div id="setupCard" class="card glass setup-card">
+        <h1 id="setupTitle" class="sr-only">Plant a focus session</h1>
+        <form id="setupForm" novalidate>
+          <div class="field">
+            <label for="intention" class="field-label">What are you growing?</label>
+            <input id="intention" name="intention" class="input input-intention" type="text" maxlength="80" autocomplete="off" spellcheck="false" placeholder="e.g. chapter three edits" aria-describedby="intentionHelp">
+            <p id="intentionHelp" class="help">Optional. It names your specimen.</p>
+          </div>
+
+          <fieldset class="field">
+            <legend class="field-label">Rhythm</legend>
+            <div class="chips" role="presentation">
+              <input class="chip-input" type="radio" name="mode" id="modeFree" value="free"><label class="chip" for="modeFree">Free flow</label>
+              <input class="chip-input" type="radio" name="mode" id="modePomodoro" value="pomodoro" checked><label class="chip" for="modePomodoro">Pomodoro 25 / 5</label>
+              <input class="chip-input" type="radio" name="mode" id="modeDeep" value="deep"><label class="chip" for="modeDeep">Deep 50 / 10</label>
+              <input class="chip-input" type="radio" name="mode" id="modeCustom" value="custom"><label class="chip" for="modeCustom">Custom</label>
+            </div>
+            <div id="customFields" class="custom-fields" hidden>
+              <label class="mini-field" for="customWork"><span class="mini-label">Focus (min)</span><input id="customWork" class="input input-num" type="number" inputmode="numeric" min="1" max="180" step="1" value="45"></label>
+              <label class="mini-field" for="customBreak"><span class="mini-label">Break (min)</span><input id="customBreak" class="input input-num" type="number" inputmode="numeric" min="0" max="60" step="1" value="10"></label>
+              <label class="mini-field" for="customRounds"><span class="mini-label">Rounds</span><input id="customRounds" class="input input-num" type="number" inputmode="numeric" min="1" max="8" step="1" value="1"></label>
+            </div>
+            <p id="modeSummary" class="help mode-summary">4 × 25 min focus, 5 min breaks</p>
+          </fieldset>
+
+          <fieldset class="field">
+            <legend class="field-label">Sensitivity</legend>
+            <div class="segmented">
+              <input class="seg-input" type="radio" name="sensitivity" id="sensGentle" value="gentle"><label class="seg" for="sensGentle">Gentle</label>
+              <input class="seg-input" type="radio" name="sensitivity" id="sensStandard" value="standard" checked><label class="seg" for="sensStandard">Standard</label>
+              <input class="seg-input" type="radio" name="sensitivity" id="sensStrict" value="strict"><label class="seg" for="sensStrict">Strict</label>
+            </div>
+            <p id="sensHelp" class="help" aria-live="polite">Balanced. Glances under about 1.5 s are free.</p>
+          </fieldset>
+
+          <div id="cameraRow" class="camera-row">
+            <div class="framing">
+              <svg class="icon framing-lid" aria-hidden="true"><use href="#i-eye-off"/></svg>
+              <canvas id="framingCanvas" class="framing-canvas" aria-hidden="true"></canvas>
+            </div>
+            <div class="camera-info">
+              <p class="camera-status"><span id="cameraState">Camera off · starts when you begin</span> <button id="btnCameraFix" class="btn btn-text btn-inline" type="button" hidden>Fix</button></p>
+              <button id="btnCameraCheck" class="btn btn-ghost btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg><span class="btn-label">Check framing</span></button>
+            </div>
+          </div>
+
+          <button id="btnBegin" class="btn btn-primary btn-lg btn-block" type="submit">Plant &amp; begin</button>
+
+          <div class="setup-secondary">
+            <button id="btnTimerOnly" class="btn btn-ghost btn-sm" type="button">Timer only (no camera)</button>
+            <button id="btnDemo" class="btn btn-ghost btn-sm" type="button">Try the demo</button>
+            <button id="btnExitDemo" class="btn btn-ghost btn-sm" type="button" hidden>Exit demo</button>
+          </div>
+        </form>
+        <p id="setupNote" class="footnote">First start downloads about 7 MB once (the face model), then it's cached. Everything runs on this device.</p>
+      </div>
+
+      <nav id="setupLinks" class="setup-links" aria-label="More">
+        <button id="linkHistory" class="btn btn-text btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-jar"/></svg><span class="btn-label">Terrarium</span></button>
+        <button id="linkPrivacy" class="btn btn-text btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg><span class="btn-label">Privacy</span></button>
+        <button id="linkHelp" class="btn btn-text btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg><span class="btn-label">Shortcuts</span></button>
+      </nav>
+    </div>
+  </section>
+
+  <!-- ======================= Permission primer ======================= -->
+  <section class="screen" id="screen-permission" hidden aria-labelledby="permTitle">
+    <div class="setup-col">
+      <div class="card glass perm-card">
+        <h2 id="permTitle" class="card-title">Let Hypha see your face, only here.</h2>
+        <ul class="perm-list">
+          <li><span class="perm-icon"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></span><span>The face model runs inside this tab. Frames never leave it.</span></li>
+          <li><span class="perm-icon"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg></span><span>Nothing is recorded. Only focus numbers are saved, on this device.</span></li>
+          <li><span class="perm-icon"><svg class="icon" aria-hidden="true"><use href="#i-lens-cap"/></svg></span><span>Put the lens cap on any time and the camera light goes off.</span></li>
+        </ul>
+        <div class="card-actions">
+          <button id="btnAllowCamera" class="btn btn-primary" type="button">Allow camera</button>
+          <button id="btnPermTimerOnly" class="btn btn-ghost" type="button">Timer only</button>
+          <button id="btnPermBack" class="btn btn-text" type="button"><svg class="icon" aria-hidden="true"><use href="#i-chevron-left"/></svg><span class="btn-label">Back</span></button>
+        </div>
+        <p class="footnote">Your browser will ask next. Choose Allow.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= Loading ======================= -->
+  <section class="screen" id="screen-loading" hidden aria-labelledby="loadPhase">
+    <div class="load-block">
+      <p id="loadPhase" class="load-phase" aria-live="polite">Opening the camera…</p>
+      <p id="loadBytes" class="load-bytes"></p>
+      <progress id="loadProgress" class="load-progress" max="1" value="0" aria-label="Loading face model"></progress>
+      <p id="loadHint" class="load-hint" hidden>First load downloads about 7 MB. Next time it's instant.</p>
+      <button id="btnLoadCancel" class="btn btn-text" type="button">Cancel</button>
+    </div>
+  </section>
+
+  <!-- ======================= Calibration ("Germination") ======================= -->
+  <section class="screen" id="screen-calibrate" hidden aria-labelledby="calText">
+    <div class="card glass cal-card">
+      <div class="cal-top">
+        <p id="calStep" class="mono-label">Seed 1 of 5</p>
+        <p id="calQuality" class="quality-pill" data-quality="good">Tracking: good</p>
+      </div>
+      <p id="calText" class="cal-text" aria-live="polite">Sit as you usually work. Look at the glowing spore.</p>
+      <p id="calHint" class="cal-hint" aria-live="polite"></p>
+      <div class="cal-actions">
+        <button id="btnCalSkip" class="btn btn-ghost btn-sm" type="button">Skip corners</button>
+        <button id="btnCalCancel" class="btn btn-text btn-sm" type="button">Cancel</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= Session ======================= -->
+  <section class="screen" id="screen-session" hidden aria-labelledby="sessionTitle">
+    <h1 id="sessionTitle" class="sr-only">Focus session</h1>
+
+    <div class="banners">
+      <div id="cameraBanner" class="banner glass" role="region" aria-label="Camera status" hidden>
+        <svg class="icon banner-icon" aria-hidden="true"><use href="#i-eye-off"/></svg>
+        <p id="cameraBannerText" class="banner-text">Camera disconnected. Your session continues, and the network rests until it's back.</p>
+        <div class="banner-actions">
+          <button id="btnCamRetry" class="btn btn-primary btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg><span class="btn-label">Reconnect</span></button>
+          <button id="btnCamTimer" class="btn btn-ghost btn-sm" type="button">Continue as timer</button>
+        </div>
+      </div>
+      <div id="drowsyBanner" class="banner glass banner-amber" role="region" aria-label="Drowsiness" hidden>
+        <svg class="icon banner-icon" aria-hidden="true"><use href="#i-eye-off"/></svg>
+        <p class="banner-text">Your eyes are getting heavy. A 5-minute break might help.</p>
+        <div class="banner-actions">
+          <button id="btnDrowsyBreak" class="btn btn-primary btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg><span class="btn-label">Take a break</span></button>
+          <button id="btnDrowsyDismiss" class="btn btn-ghost btn-sm" type="button">Not now</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="session-dock">
+      <div id="breakPanel" class="panel glass state-panel" role="region" aria-labelledby="breakTitle" hidden>
+        <div class="panel-text">
+          <h3 id="breakTitle" class="panel-title">Rest your eyes.</h3>
+          <p id="breakText" class="panel-body">Look at something far away. The lid gathers dew while you do.</p>
+          <p id="breakRest" class="break-rest">0s of 20s looking away</p>
+        </div>
+        <div class="panel-actions">
+          <button id="btnSkipBreak" class="btn btn-ghost btn-sm" type="button">Skip break</button>
+          <button id="btnExtendBreak" class="btn btn-text btn-sm" type="button">+5 min</button>
+        </div>
+      </div>
+
+      <div id="pausedPanel" class="panel glass state-panel" role="region" aria-labelledby="pausedText" hidden>
+        <div class="panel-text">
+          <h3 id="pausedText" class="panel-title">Paused</h3>
+        </div>
+        <div class="panel-actions">
+          <button id="btnResume" class="btn btn-primary btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg><span class="btn-label">Resume</span></button>
+        </div>
+      </div>
+
+      <div id="demoBar" class="demo-bar" role="toolbar" aria-label="Demo signals" hidden>
+        <span class="demo-label">Demo:</span>
+        <button type="button" class="chip" data-sim="focus">Focus</button>
+        <button type="button" class="chip" data-sim="glance">Glance</button>
+        <button type="button" class="chip" data-sim="turn">Turn away</button>
+        <button type="button" class="chip" data-sim="phone">Phone</button>
+        <button type="button" class="chip" data-sim="closed">Eyes closed</button>
+        <button type="button" class="chip" data-sim="absent">Leave</button>
+        <button type="button" class="chip" data-sim="drowsy">Drowsy</button>
+      </div>
+
+      <div id="hud" class="hud">
+        <p id="timerLabel" class="mono-label timer-label">Elapsed</p>
+        <p id="timer" class="timer" role="timer">0:00</p>
+        <p id="roundText" class="round-text" hidden>Round 1 of 4</p>
+        <p id="intentionText" class="intention-text" hidden></p>
+        <p class="state-line"><span id="stateWord" class="state-word">rooted</span></p>
+        <p id="stateReason" class="sr-only"></p>
+      </div>
+    </div>
+
+    <button id="btnFruitSkip" class="btn btn-text fruit-skip" type="button" hidden>Skip</button>
+
+    <button id="btnNotes" class="notes-tab" type="button" aria-expanded="false" aria-controls="notes"><svg class="icon" aria-hidden="true"><use href="#i-notes"/></svg><span class="btn-label">Field notes</span></button>
+    <div id="controls" class="controls" role="group" aria-label="Session controls">
+      <button id="btnBreak" class="ctrl" type="button"><span class="ctrl-icon"><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg></span><span class="btn-label">Break</span></button>
+      <button id="btnPause" class="ctrl ctrl-main" type="button" aria-pressed="false"><span class="ctrl-icon"><svg class="icon" aria-hidden="true"><use href="#i-pause"/></svg></span><span class="btn-label">Pause</span></button>
+      <button id="btnEnd" class="ctrl" type="button"><span class="ctrl-icon"><svg class="icon" aria-hidden="true"><use href="#i-stop"/></svg></span><span class="btn-label">End</span></button>
+    </div>
+
+    <div id="notesBackdrop" class="notes-backdrop" hidden></div>
+    <aside id="notes" class="notes" aria-labelledby="notesTitle">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <h2 id="notesTitle" class="notes-title">Field notes</h2>
+      <figure class="spark">
+        <canvas id="notesSpark" class="spark-canvas" width="268" height="56" aria-hidden="true"></canvas>
+        <figcaption class="spark-cap"><span>focus · last 5 min</span><span>now</span></figcaption>
+      </figure>
+      <dl class="notes-stats">
+        <div class="stat-row"><dt>Held</dt><dd><span id="nHeld">–</span> <span id="nHeldTime" class="dd-sub">–</span></dd></div>
+        <div class="stat-row"><dt>Current root</dt><dd id="nStreak">–</dd></div>
+        <div class="stat-row"><dt>Longest root</dt><dd id="nLongest">–</dd></div>
+        <div class="stat-row"><dt>Scars</dt><dd id="nScars">–</dd></div>
+        <div class="stat-row stat-gold"><dt>Returns</dt><dd id="nReturns">–</dd></div>
+        <div class="stat-row"><dt>Depth</dt><dd id="nDepth">–</dd></div>
+        <div class="stat-row"><dt>Blinks</dt><dd id="nBlink">—</dd></div>
+        <div class="stat-row"><dt>Drowsy</dt><dd id="nDrowsy">none</dd></div>
+      </dl>
+      <div class="notes-drift">
+        <p id="nLastDrift" class="last-drift">No drifts yet.</p>
+        <button id="btnForgive" class="btn btn-ghost btn-sm" type="button" disabled><svg class="icon" aria-hidden="true"><use href="#i-feather"/></svg><span class="btn-label">That was fine</span></button>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ======================= Summary ======================= -->
+  <section class="screen" id="screen-summary" hidden aria-labelledby="specimenName">
+    <article id="summarySheet" class="sheet glass summary-sheet">
+      <p id="specimenLabel" class="specimen-label"></p>
+      <h1 class="specimen-title"><span id="specimenName" class="specimen-name">Hypha</span> <span id="specimenVar" class="specimen-var"></span></h1>
+
+      <div id="sumGrid" class="tiles">
+        <div class="tile tile-hero"><b class="tile-v" id="sumHeld">–</b><span class="tile-c" id="sumHeldOf">held of –</span></div>
+        <div class="tile"><b class="tile-v" id="sumPct">–</b><span class="tile-c">focus</span></div>
+        <div class="tile"><b class="tile-v" id="sumLongest">–</b><span class="tile-c">longest root</span></div>
+        <div class="tile tile-gold"><b class="tile-v" id="sumReturns">–</b><span class="tile-c" id="sumRecovery">returns</span></div>
+        <div class="tile"><b class="tile-v" id="sumDepth">–</b><span class="tile-c">peak depth</span></div>
+        <div class="tile"><b class="tile-v" id="sumRoot">–</b><span class="tile-c">time to root</span></div>
+        <div class="tile"><b class="tile-v" id="sumBlink">–</b><span class="tile-c">blinks</span></div>
+        <div class="tile"><b class="tile-v" id="sumDrowsy">–</b><span class="tile-c">drowsy moments</span></div>
+      </div>
+      <p id="sumUnmeasured" class="note-line" hidden>Timer-only time isn't measured; it counts as held.</p>
+
+      <figure class="strip">
+        <canvas id="sumTimeline" class="strip-canvas"></canvas>
+        <figcaption class="strip-scale"><span>start</span><span>the session, second by second</span><span>end</span></figcaption>
+      </figure>
+
+      <div id="sumCauses" class="causes" role="list" aria-label="Where drifts went"></div>
+      <p id="sumDiagnosis" class="diagnosis"></p>
+
+      <div id="sumRating" class="rating" role="radiogroup" aria-labelledby="sumRatingLabel">
+        <h3 id="sumRatingLabel" class="rating-label">How did it feel?</h3>
+        <div class="rating-options">
+          <button type="button" role="radio" aria-checked="false" data-rating="1">Scattered</button>
+          <button type="button" role="radio" aria-checked="false" data-rating="2">Uneven</button>
+          <button type="button" role="radio" aria-checked="false" data-rating="3">Steady</button>
+          <button type="button" role="radio" aria-checked="false" data-rating="4">Deep</button>
+          <button type="button" role="radio" aria-checked="false" data-rating="5">Flow</button>
+        </div>
+      </div>
+
+      <div class="sheet-actions">
+        <button id="btnKeepsake" class="btn btn-primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span class="btn-label">Save keepsake</span></button>
+        <button id="btnToTerrarium" class="btn btn-ghost" type="button"><svg class="icon" aria-hidden="true"><use href="#i-jar"/></svg><span class="btn-label">Terrarium</span></button>
+        <button id="btnAgain" class="btn btn-ghost" type="button"><svg class="icon" aria-hidden="true"><use href="#i-spore"/></svg><span class="btn-label">Grow another</span></button>
+      </div>
+    </article>
+  </section>
+
+  <!-- ======================= Terrarium ======================= -->
+  <section class="screen" id="screen-history" hidden aria-labelledby="histTitle">
+    <div class="hist-wrap">
+      <header class="hist-head">
+        <button id="btnHistBack" class="btn btn-ghost btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-chevron-left"/></svg><span class="btn-label">Back</span></button>
+        <div class="hist-titles">
+          <h1 id="histTitle" class="hist-title">Terrarium</h1>
+          <p id="histTotals" class="hist-totals"></p>
+        </div>
+        <p id="histStreak" class="streak-chip"></p>
+      </header>
+
+      <div id="histEmpty" class="hist-empty" hidden>
+        <svg class="icon hist-empty-icon" aria-hidden="true"><use href="#i-spore"/></svg>
+        <p class="hist-empty-title">Your terrarium is empty.</p>
+        <p class="hist-empty-body">Grow your first specimen. It takes one focus session.</p>
+        <button id="btnHistStart" class="btn btn-primary" type="button">Start a session</button>
+      </div>
+
+      <div class="hist-grid">
+        <section class="hist-sec sec-days" aria-labelledby="hDays">
+          <h2 id="hDays" class="sec-title">Last 14 days</h2>
+          <div id="chartDays" class="chart chart-days"></div>
+          <ul id="chartDaysText" class="sr-only"></ul>
+        </section>
+
+        <section class="hist-sec sec-shelves" aria-labelledby="hShelves">
+          <h2 id="hShelves" class="sec-title">Shelves</h2>
+          <div id="shelves" class="shelves"></div>
+        </section>
+
+        <section class="hist-sec sec-heat" aria-labelledby="hHeat">
+          <h2 id="hHeat" class="sec-title">When you focus</h2>
+          <div id="chartHeat" class="chart chart-heat"></div>
+          <p id="bestHours" class="chart-note"></p>
+        </section>
+
+        <section class="hist-sec sec-compass" aria-labelledby="hCompass">
+          <h2 id="hCompass" class="sec-title">Where drifts go</h2>
+          <div id="chartCompass" class="chart chart-compass"></div>
+          <p id="compassText" class="chart-note"></p>
+        </section>
+
+        <section class="hist-sec sec-recovery" aria-labelledby="hRecovery">
+          <h2 id="hRecovery" class="sec-title">Coming back</h2>
+          <div id="chartRecovery" class="chart chart-recovery"></div>
+          <p id="recoveryText" class="chart-note"></p>
+        </section>
+      </div>
+
+      <section class="hist-sec sec-data" aria-labelledby="hData">
+        <h2 id="hData" class="sec-title">Your data</h2>
+        <div class="data-actions">
+          <button id="btnExport" class="btn btn-ghost btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span class="btn-label">Export JSON</span></button>
+          <button id="btnImport" class="btn btn-ghost btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg><span class="btn-label">Import JSON</span></button>
+          <input id="importFile" class="visually-hidden-file" type="file" accept="application/json,.json" tabindex="-1" aria-hidden="true">
+          <button id="btnErase" class="btn btn-ghost btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><span class="btn-label">Erase everything</span></button>
+        </div>
+        <p class="chart-note">Stored only in this browser. Export to keep a copy.</p>
+      </section>
+    </div>
+  </section>
+
+  <!-- ======================= Error ======================= -->
+  <section class="screen" id="screen-error" hidden aria-labelledby="errTitle">
+    <div class="setup-col">
+      <div class="card glass error-card">
+        <svg class="icon error-icon" aria-hidden="true"><use href="#i-eye-off"/></svg>
+        <h2 id="errTitle" class="card-title">The camera couldn't start</h2>
+        <p id="errBody" class="card-body">Something interrupted it. Try again, or restart your browser.</p>
+        <div id="errActions" class="card-actions">
+          <button id="btnErrRetry" class="btn btn-primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg><span class="btn-label">Try again</span></button>
+          <button id="btnErrTimer" class="btn btn-ghost" type="button">Use timer only</button>
+          <button id="btnErrDemo" class="btn btn-ghost" type="button">Try the demo</button>
+          <button id="btnErrBack" class="btn btn-text" type="button"><svg class="icon" aria-hidden="true"><use href="#i-chevron-left"/></svg><span class="btn-label">Back</span></button>
+        </div>
+        <details id="errDetail" class="err-detail">
+          <summary>Technical details</summary>
+          <code id="errCode"></code>
+        </details>
+      </div>
+    </div>
+  </section>
 </main>
 
-<script type="module">
-import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+<!-- ============================================================ -->
+<!-- Dialogs (native <dialog>, opened with showModal())            -->
+<!-- ============================================================ -->
+<!-- ----------------------- Settings ----------------------- -->
+<dialog id="dlgSettings" class="dlg dlg-wide" aria-labelledby="dlgSettingsTitle">
+  <div class="dlg-head">
+    <h2 id="dlgSettingsTitle" class="dlg-title">Settings</h2>
+    <button id="btnSettingsClose" class="icon-btn" type="button" aria-label="Close settings"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="dlg-body">
+    <fieldset class="set-group">
+      <legend>Focus</legend>
+      <div class="set-row">
+        <label for="setSensitivity">Sensitivity</label>
+        <select id="setSensitivity" class="select">
+          <option value="gentle">Gentle</option>
+          <option value="standard" selected>Standard</option>
+          <option value="strict">Strict</option>
+        </select>
+      </div>
+      <div class="set-row set-check">
+        <label for="setDesk">Looking down at my desk counts as focus</label>
+        <input id="setDesk" class="switch" type="checkbox" aria-describedby="setDeskHelp">
+        <p id="setDeskHelp" class="set-help">For writing on paper or reading a book.</p>
+      </div>
+      <div class="set-row set-check">
+        <label for="setEyesClosed">Closed eyes count as focus</label>
+        <input id="setEyesClosed" class="switch" type="checkbox" aria-describedby="setEyesClosedHelp">
+        <p id="setEyesClosedHelp" class="set-help">For thinking or meditation. Drowsiness is still noticed.</p>
+      </div>
+      <div class="set-row set-check">
+        <label for="setStrictTab">Leaving this tab counts as a drift</label>
+        <input id="setStrictTab" class="switch" type="checkbox" aria-describedby="setStrictTabHelp">
+        <p id="setStrictTabHelp" class="set-help">Off by default. The camera decides, so you can work in other windows.</p>
+      </div>
+      <div class="set-row set-check">
+        <label for="setAutoPause">Pause automatically when I step away (30 s)</label>
+        <input id="setAutoPause" class="switch" type="checkbox" checked>
+      </div>
+    </fieldset>
 
-const $ = (id) => document.getElementById(id);
-const video = $("video"), overlay = $("overlay"), octx = overlay.getContext("2d");
-const tl = $("timeline"), tctx = tl.getContext("2d");
+    <fieldset class="set-group">
+      <legend>Rhythm</legend>
+      <div class="set-row">
+        <label for="setWork">Pomodoro focus (min)</label>
+        <input id="setWork" class="input input-num" type="number" inputmode="numeric" min="5" max="90" step="1" value="25">
+      </div>
+      <div class="set-row">
+        <label for="setShort">Pomodoro break (min)</label>
+        <input id="setShort" class="input input-num" type="number" inputmode="numeric" min="1" max="30" step="1" value="5">
+      </div>
+      <div class="set-row">
+        <label for="setLong">Long break (min)</label>
+        <input id="setLong" class="input input-num" type="number" inputmode="numeric" min="5" max="60" step="1" value="15">
+      </div>
+      <div class="set-row">
+        <label for="setRounds">Pomodoro rounds</label>
+        <input id="setRounds" class="input input-num" type="number" inputmode="numeric" min="1" max="8" step="1" value="4">
+      </div>
+      <div class="set-row">
+        <label for="setGoal">Daily goal (min)</label>
+        <input id="setGoal" class="input input-num" type="number" inputmode="numeric" min="10" max="600" step="5" value="50">
+      </div>
+      <div class="set-row set-check">
+        <label for="setAutoNext">Start the next round automatically</label>
+        <input id="setAutoNext" class="switch" type="checkbox" checked>
+      </div>
+      <div class="set-row set-check">
+        <label for="setRecenter">Re-center the camera after breaks</label>
+        <input id="setRecenter" class="switch" type="checkbox" checked>
+      </div>
+    </fieldset>
 
-// Tunable thresholds
-const YAW_LIMIT = 0.10;      // head turn (fraction of face width) away from calibration
-const PITCH_LIMIT = 0.08;    // head tilt up/down away from calibration
-const GAZE_SIDE = 0.55;      // eye look left/right blendshape
-const GAZE_DOWN = 0.62;      // eye look down blendshape (phone check)
-const BLINK = 0.55;          // eyes considered closed
-const CLOSED_MS = 1200;      // eyes closed this long = not attentive
-const DEBOUNCE_MS = 700;     // must be off-screen this long to count as distracted
-const CAL_MS = 2000;
+    <fieldset class="set-group">
+      <legend>Feedback</legend>
+      <div class="set-row set-check">
+        <label for="setSound">Sound</label>
+        <input id="setSound" class="switch" type="checkbox">
+      </div>
+      <div class="set-row set-check">
+        <label for="setSoundscape">Ambient soundscape</label>
+        <input id="setSoundscape" class="switch" type="checkbox" checked>
+      </div>
+      <div class="set-row set-check">
+        <label for="setChimes">Chimes (blinks, returns, milestones)</label>
+        <input id="setChimes" class="switch" type="checkbox" checked>
+      </div>
+      <div class="set-row set-range">
+        <label for="setVolume">Volume</label>
+        <input id="setVolume" class="range" type="range" min="0" max="1" step="0.05" value="0.6">
+      </div>
+      <div class="set-row set-check">
+        <label for="setNudgeSound">Soft tone after 10 s away</label>
+        <input id="setNudgeSound" class="switch" type="checkbox" checked>
+      </div>
+      <div class="set-row set-check">
+        <label for="setNotify">Notify me when I drift while Hypha is hidden</label>
+        <input id="setNotify" class="switch" type="checkbox">
+      </div>
+      <div class="set-row set-check">
+        <label for="setLiveTitle">Live timer in tab title and icon</label>
+        <input id="setLiveTitle" class="switch" type="checkbox" checked>
+      </div>
+      <div class="set-row set-check">
+        <label for="setForgiveToast">Offer 'That was fine' after a drift</label>
+        <input id="setForgiveToast" class="switch" type="checkbox" checked>
+      </div>
+    </fieldset>
 
-let landmarker, running = false, lastVideoTime = -1;
-let calib = null, calSamples = [], calStart = 0;
-let eyesClosedSince = null, offSince = null;
-let state = "idle", score = 0;
-let focusedMs = 0, totalMs = 0, distractions = 0, streakStart = null, lastTick = performance.now();
-const history = []; // {t, s}
-let audioCtx;
+    <fieldset class="set-group">
+      <legend>Display</legend>
+      <div class="set-row">
+        <label for="setMotion">Motion</label>
+        <select id="setMotion" class="select">
+          <option value="system" selected>Match system</option>
+          <option value="reduced">Reduced</option>
+          <option value="full">Full</option>
+        </select>
+      </div>
+      <div class="set-row">
+        <label for="setEyeMode">Camera preview</label>
+        <select id="setEyeMode" class="select">
+          <option value="mesh" selected>Dots</option>
+          <option value="video">Video</option>
+          <option value="off">Hidden</option>
+        </select>
+      </div>
+      <div class="set-row set-check">
+        <label for="setFadeChrome">Fade controls while I'm focused</label>
+        <input id="setFadeChrome" class="switch" type="checkbox" checked>
+      </div>
+    </fieldset>
 
-const STATES = {
-  idle:      { text: "Not started",    color: "--idle" },
-  loading:   { text: "Loading model…", color: "--idle" },
-  calibrating:{ text: "Calibrating…",  color: "--accent" },
-  focused:   { text: "Paying attention", color: "--good" },
-  away:      { text: "Looking away",   color: "--bad" },
-  closed:    { text: "Eyes closed",    color: "--bad" },
-  noface:    { text: "No one there",   color: "--warn" },
-  hidden:    { text: "Tab not visible", color: "--bad" },
-};
-const cssVar = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+    <fieldset class="set-group">
+      <legend>Camera</legend>
+      <div class="set-row">
+        <label for="setCamera">Camera</label>
+        <select id="setCamera" class="select">
+          <option value="">Default camera</option>
+        </select>
+      </div>
+      <div class="set-row set-buttons">
+        <p id="calInfo" class="set-info">Not calibrated yet</p>
+        <div class="set-btns">
+          <button id="btnRecalibrate" class="btn btn-ghost btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg><span class="btn-label">Recalibrate</span></button>
+          <button id="btnForgetCal" class="btn btn-text btn-sm" type="button">Forget calibration</button>
+        </div>
+      </div>
+    </fieldset>
 
-function setState(s, reason = "") {
-  $("reason").textContent = reason;
-  if (s === state) return;
-  const wasFocused = state === "focused";
-  state = s;
-  $("statusText").textContent = STATES[s].text;
-  $("dot").style.background = cssVar(STATES[s].color);
-  const distracted = ["away", "closed", "noface", "hidden"].includes(s);
-  document.body.classList.toggle("alert", distracted);
-  document.title = distracted ? "👀 Hey, look here!" : "Attention Check";
-  if (s === "focused") streakStart = performance.now();
-  if (wasFocused && distracted) { distractions++; beep(); }
-}
+    <fieldset class="set-group">
+      <legend>Data</legend>
+      <div class="set-row set-buttons">
+        <p class="set-info">Stored only in this browser. Export to keep a copy.</p>
+        <div class="set-btns">
+          <button id="btnSetExport" class="btn btn-ghost btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span class="btn-label">Export JSON</span></button>
+          <button id="btnSetImport" class="btn btn-ghost btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg><span class="btn-label">Import JSON</span></button>
+          <button id="btnSetErase" class="btn btn-ghost btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><span class="btn-label">Erase everything…</span></button>
+        </div>
+      </div>
+    </fieldset>
+  </div>
+</dialog>
 
-function beep() {
-  if (!$("sound").checked) return;
-  try {
-    audioCtx ??= new AudioContext();
-    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-    o.frequency.value = 880; g.gain.value = 0.08;
-    o.connect(g).connect(audioCtx.destination);
-    o.start(); o.stop(audioCtx.currentTime + 0.18);
-  } catch {}
-}
+<!-- ----------------------- Privacy ----------------------- -->
+<dialog id="dlgPrivacy" class="dlg dlg-wide" aria-labelledby="dlgPrivacyTitle">
+  <div class="dlg-head">
+    <h2 id="dlgPrivacyTitle" class="dlg-title"><svg class="icon title-icon" aria-hidden="true"><use href="#i-shield"/></svg>How privacy works</h2>
+    <button id="btnPrivacyClose" class="icon-btn" type="button" aria-label="Close privacy"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="dlg-body prose">
+    <p class="lede">A focus timer with a pulse. Your webcam reads attention on this device, and a glowing organism grows while you stay with your work.</p>
 
-async function start() {
-  $("startBtn").disabled = true;
-  setState("loading");
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: "user" } });
-    video.srcObject = stream;
-    await video.play();
-    $("placeholder").style.display = "none";
-    if (!landmarker) {
-      const files = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
-      landmarker = await FaceLandmarker.createFromOptions(files, {
-        baseOptions: {
-          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-          delegate: "GPU",
-        },
-        runningMode: "VIDEO",
-        numFaces: 1,
-        outputFaceBlendshapes: true,
-      });
-    }
-    overlay.width = video.videoWidth; overlay.height = video.videoHeight;
-    running = true;
-    $("startBtn").textContent = "Stop camera";
-    $("startBtn").disabled = false;
-    $("calBtn").disabled = false;
-    recalibrate();
-    requestAnimationFrame(loop);
-  } catch (err) {
-    console.error(err);
-    setState("idle", err.name === "NotAllowedError" ? "Camera permission was denied." : "Could not start: " + err.message);
-    $("startBtn").disabled = false;
-  }
-}
+    <h3>What the camera sees.</h3>
+    <p>The face model (MediaPipe, running in your browser) turns each frame into 478 points and a few expression scores. Hypha keeps only numbers like head angle and eye openness, for the current moment only.</p>
 
-function stop() {
-  running = false;
-  video.srcObject?.getTracks().forEach((t) => t.stop());
-  video.srcObject = null;
-  octx.clearRect(0, 0, overlay.width, overlay.height);
-  $("placeholder").style.display = "";
-  $("startBtn").textContent = "Start camera";
-  $("calBtn").disabled = true;
-  setState("idle");
-}
+    <h3>What's stored.</h3>
+    <p>Session numbers (timings, focus levels, your specimen's seed) in this browser's local storage. Never frames or images.</p>
 
-function recalibrate() {
-  calib = null; calSamples = []; calStart = performance.now();
-  setState("calibrating", "Look at the screen normally…");
-}
+    <h3>What's downloaded.</h3>
+    <p>Downloads only:</p>
+    <ul class="host-list">
+      <li><code>cdn.jsdelivr.net</code><span>the tracking engine, v1.0.1, integrity-checked</span></li>
+      <li><code>storage.googleapis.com</code><span>the face model, 3.8 MB</span></li>
+      <li><code>fonts.googleapis.com</code> / <code>fonts.gstatic.com</code><span>typefaces</span></li>
+    </ul>
 
-// Head pose as ratios, robust to distance from camera
-function headPose(lm) {
-  const left = lm[234], right = lm[454], nose = lm[1], top = lm[10], chin = lm[152];
-  const yaw = (nose.x - left.x) / (right.x - left.x);     // ~0.5 facing forward
-  const pitch = (nose.y - top.y) / (chin.y - top.y);       // ~0.55 facing forward
-  return { yaw, pitch };
-}
+    <h3>Right now.</h3>
+    <div class="live-lines">
+      <p id="privCam" class="live-line">Camera: off</p>
+      <p id="privReqCount" class="live-line">Network requests since tracking began: 0</p>
+      <p id="privBlocked" class="live-line">Blocked by policy: 0</p>
+    </div>
+    <ul id="privReqList" class="req-list" aria-label="Resources this page has loaded"></ul>
 
-function bs(result) {
-  const out = {};
-  for (const c of result.faceBlendshapes[0].categories) out[c.categoryName] = c.score;
-  return out;
-}
+    <h3>The lock.</h3>
+    <p>This page's Content-Security-Policy lets scripts connect only to the two download hosts above. Uploading anywhere else is blocked by your browser.</p>
+    <pre id="privCsp" class="csp"></pre>
 
-function evaluate(now) {
-  if (document.hidden) return { s: "hidden", why: "You switched tabs or minimized the window." };
-  const res = landmarker.detectForVideo(video, now);
-  octx.clearRect(0, 0, overlay.width, overlay.height);
-  if (!res.faceLandmarks.length) { eyesClosedSince = null; return { s: "noface", why: "No face in view." }; }
+    <h3>Test it yourself.</h3>
+    <p>After Hypha loads, turn off Wi-Fi. Tracking keeps working.</p>
 
-  const lm = res.faceLandmarks[0];
-  const pose = headPose(lm);
-  const b = bs(res);
+    <p class="honesty">If "Blocked by policy" isn't 0, that's the lock working. The MediaPipe engine tries to send a small usage-log ping to Google (odml.pa.googleapis.com), and this policy stops it. Your browser console shows it as a blocked request.</p>
+    <p class="honesty">A policy is strong evidence, not proof. It can't stop a page from navigating away, for example. Hypha has no upload code at all, and its files are plain and readable.</p>
+  </div>
+</dialog>
 
-  if (!calib) {
-    calSamples.push(pose);
-    if (now - calStart < CAL_MS) { drawBox(lm, cssVar("--accent")); return { s: "calibrating", why: "Look at the screen normally…" }; }
-    const avg = (k) => calSamples.reduce((a, p) => a + p[k], 0) / calSamples.length;
-    calib = { yaw: avg("yaw"), pitch: avg("pitch") };
-  }
+<!-- ----------------------- Help ----------------------- -->
+<dialog id="dlgHelp" class="dlg dlg-wide" aria-labelledby="dlgHelpTitle">
+  <div class="dlg-head">
+    <h2 id="dlgHelpTitle" class="dlg-title">Shortcuts &amp; signals</h2>
+    <button id="btnHelpClose" class="icon-btn" type="button" aria-label="Close help"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="dlg-body">
+    <h3 class="help-h">Keyboard</h3>
+    <table class="keys">
+      <caption class="sr-only">Keyboard shortcuts</caption>
+      <thead><tr><th scope="col">Key</th><th scope="col">Where</th><th scope="col">Does</th></tr></thead>
+      <tbody>
+        <tr><td><kbd>Space</kbd></td><td>Setup</td><td>Begin (the demo, in demo mode)</td></tr>
+        <tr><td><kbd>Space</kbd></td><td>Session</td><td>Pause / resume</td></tr>
+        <tr><td><kbd>Enter</kbd></td><td>Intention field</td><td>Begin</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Anywhere</td><td>Close the topmost menu, drawer or dialog</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Calibration</td><td>Cancel calibration</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Fruiting</td><td>Skip fruiting</td></tr>
+        <tr><td><kbd>B</kbd></td><td>Session</td><td>Break now / skip break</td></tr>
+        <tr><td><kbd>E</kbd></td><td>Session</td><td>End the session…</td></tr>
+        <tr><td><kbd>R</kbd> / <kbd>Shift</kbd>+<kbd>R</kbd></td><td>Session, or Setup with the camera on</td><td>Recalibrate: quick / full</td></tr>
+        <tr><td><kbd>C</kbd></td><td>Camera on</td><td>Cycle the eye preview: dots → video → hidden</td></tr>
+        <tr><td><kbd>L</kbd></td><td>Any</td><td>Lens cap on / off</td></tr>
+        <tr><td><kbd>M</kbd></td><td>Any</td><td>Sound on / off</td></tr>
+        <tr><td><kbd>N</kbd></td><td>Session</td><td>Toggle field notes</td></tr>
+        <tr><td><kbd>F</kbd></td><td>Session</td><td>“That was fine”: forgive the last drift</td></tr>
+        <tr><td><kbd>T</kbd></td><td>Session</td><td>Say the time, focus and state</td></tr>
+        <tr><td><kbd>H</kbd></td><td>Not in a session</td><td>Terrarium</td></tr>
+        <tr><td><kbd>S</kbd> or <kbd>,</kbd></td><td>Any</td><td>Settings</td></tr>
+        <tr><td><kbd>P</kbd></td><td>Session</td><td>Pop out a mini window</td></tr>
+        <tr><td><kbd>K</kbd></td><td>Summary, specimen jar</td><td>Save keepsake</td></tr>
+        <tr><td><kbd>?</kbd></td><td>Any</td><td>This help</td></tr>
+        <tr><td><kbd>1</kbd>–<kbd>7</kbd></td><td>Demo session</td><td>Simulate: focus, glance, turn, phone, eyes closed, leave, drowsy</td></tr>
+        <tr><td><kbd>D</kbd></td><td>With <code>?debug=1</code></td><td>Toggle the debug panel</td></tr>
+      </tbody>
+    </table>
 
-  const dYaw = pose.yaw - calib.yaw, dPitch = pose.pitch - calib.pitch;
-  const blink = (b.eyeBlinkLeft + b.eyeBlinkRight) / 2;
-  const gazeSide = Math.max((b.eyeLookOutLeft + b.eyeLookInRight) / 2, (b.eyeLookInLeft + b.eyeLookOutRight) / 2);
-  const gazeDown = (b.eyeLookDownLeft + b.eyeLookDownRight) / 2;
+    <h3 class="help-h">State words</h3>
+    <ul class="legend">
+      <li><span class="swatch" data-word="rooted"></span><b class="lg-word" data-word="rooted">rooted</b><span class="lg-gloss">Eyes on your work, so it grows.</span></li>
+      <li><span class="swatch" data-word="wavering"></span><b class="lg-word" data-word="wavering">wavering</b><span class="lg-gloss">Attention near the edge, so growth slows.</span></li>
+      <li><span class="swatch" data-word="shy"></span><b class="lg-word" data-word="shy">shy</b><span class="lg-gloss">You turned, glanced or looked up. It flinches from that side.</span></li>
+      <li><span class="swatch" data-word="sinking"></span><b class="lg-word" data-word="sinking">sinking</b><span class="lg-gloss">Looking down, often at a phone. The light drains downward.</span></li>
+      <li><span class="swatch" data-word="elsewhere"></span><b class="lg-word" data-word="elsewhere">elsewhere</b><span class="lg-gloss">Another tab has focus (only with the strict tab setting).</span></li>
+      <li><span class="swatch" data-word="asleep"></span><b class="lg-word" data-word="asleep">asleep</b><span class="lg-gloss">Eyes closed. It rests with you, in amber.</span></li>
+      <li><span class="swatch" data-word="dormant"></span><b class="lg-word" data-word="dormant">dormant</b><span class="lg-gloss">You stepped away. It waits, and your timer can pause.</span></li>
+      <li><span class="swatch" data-word="unseen"></span><b class="lg-word" data-word="unseen">unseen</b><span class="lg-gloss">The camera couldn't see clearly. Never counted against you.</span></li>
+      <li><span class="swatch" data-word="growing"></span><b class="lg-word" data-word="growing">growing</b><span class="lg-gloss">Timer only. Nothing is measured; the time counts as held.</span></li>
+      <li><span class="swatch" data-word="resting"></span><b class="lg-word" data-word="resting">resting</b><span class="lg-gloss">A break. Dew gathers while you look away.</span></li>
+      <li><span class="swatch" data-word="paused"></span><b class="lg-word" data-word="paused">paused</b><span class="lg-gloss">Paused. Nothing is counted.</span></li>
+    </ul>
 
-  let r;
-  if (blink > BLINK) {
-    eyesClosedSince ??= now;
-    r = now - eyesClosedSince > CLOSED_MS ? { s: "closed", why: "Eyes have been closed for a while." } : { s: "focused", why: "" };
-  } else {
-    eyesClosedSince = null;
-    if (Math.abs(dYaw) > YAW_LIMIT) r = { s: "away", why: "Head turned to the side." };
-    else if (dPitch > PITCH_LIMIT) r = { s: "away", why: "Head tilted down." };
-    else if (dPitch < -PITCH_LIMIT) r = { s: "away", why: "Head tilted up." };
-    else if (gazeSide > GAZE_SIDE) r = { s: "away", why: "Eyes looking to the side." };
-    else if (gazeDown > GAZE_DOWN) r = { s: "away", why: "Eyes looking down." };
-    else r = { s: "focused", why: "" };
-  }
-  drawBox(lm, cssVar(r.s === "focused" ? "--good" : "--bad"));
-  return r;
-}
+    <h3 class="help-h">Scars and mending</h3>
+    <ul class="legend scar-legend">
+      <li><svg class="scar-glyph" viewBox="0 0 40 24" aria-hidden="true"><path class="sg-scar" d="M6 17Q20 7 34 17"/><path class="sg-scar sg-thin" d="M10 13.6l-1.6-3.2M15 11.1l-.9-3.4M20 10.2v-3.6M25 11.1l.9-3.4M30 13.6l1.6-3.2"/></svg><span class="lg-gloss"><b>wicks</b>: head turned</span></li>
+      <li><svg class="scar-glyph" viewBox="0 0 40 24" aria-hidden="true"><path class="sg-scar" d="M6 9Q20 3 34 9"/><path class="sg-scar sg-thin" d="M13 6.6v8M20 6v11M27 6.6v7"/><circle class="sg-dot" cx="13" cy="15.4" r="1.3"/><circle class="sg-dot" cx="20" cy="18.2" r="1.3"/><circle class="sg-dot" cx="27" cy="14.4" r="1.3"/></svg><span class="lg-gloss"><b>drips</b>: looking down</span></li>
+      <li><svg class="scar-glyph" viewBox="0 0 40 24" aria-hidden="true"><path class="sg-scar sg-hair" d="M8 15Q20 8 32 15"/><path class="sg-scar sg-faint" d="M8 13.4Q20 6.4 32 13.4M8 16.6Q20 9.6 32 16.6"/></svg><span class="lg-gloss"><b>hairline</b>: glance</span></li>
+      <li><svg class="scar-glyph" viewBox="0 0 40 24" aria-hidden="true"><circle class="sg-amber" cx="20" cy="12" r="8.5"/></svg><span class="lg-gloss"><b>amber dotted ring</b>: eyes closed</span></li>
+      <li><svg class="scar-glyph" viewBox="0 0 40 24" aria-hidden="true"><circle class="sg-frost" cx="20" cy="12" r="8.5"/></svg><span class="lg-gloss"><b>frost ring</b>: stepped away</span></li>
+      <li><svg class="scar-glyph" viewBox="0 0 40 24" aria-hidden="true"><path class="sg-scar sg-under" d="M6 16Q20 6 34 16"/><path class="sg-gold" d="M6 14.6Q20 4.6 34 14.6"/><path class="sg-gold sg-thin" d="M15 9.1l-1.5-2.4M24 8.9l1.9-2.1"/></svg><span class="lg-gloss"><b>gold seam</b>: mended, after 60 s of focus</span></li>
+    </ul>
+    <p class="help-foot">Forgiven drifts (<kbd>F</kbd>, “That was fine”) become a soft mint wash and are never counted.</p>
+  </div>
+</dialog>
 
-function drawBox(lm, color) {
-  let x0 = 1, y0 = 1, x1 = 0, y1 = 0;
-  for (const p of lm) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
-  const W = overlay.width, H = overlay.height;
-  octx.strokeStyle = color; octx.lineWidth = 4;
-  octx.strokeRect(x0 * W - 10, y0 * H - 10, (x1 - x0) * W + 20, (y1 - y0) * H + 20);
-  octx.fillStyle = color;
-  for (const i of [468, 473]) if (lm[i]) { octx.beginPath(); octx.arc(lm[i].x * W, lm[i].y * H, 4, 0, 7); octx.fill(); }
-}
+<!-- ----------------------- End session ----------------------- -->
+<dialog id="dlgEnd" class="dlg dlg-confirm" aria-labelledby="dlgEndTitle" aria-describedby="endBody">
+  <div class="dlg-head">
+    <h2 id="dlgEndTitle" class="dlg-title">End this session?</h2>
+  </div>
+  <div class="dlg-body">
+    <p id="endBody">It will fruit and join your terrarium.</p>
+  </div>
+  <div class="dlg-actions">
+    <button id="btnEndConfirm" class="btn btn-primary" type="button">End &amp; fruit</button>
+    <button id="btnEndDiscard" class="btn btn-text btn-scar" type="button">Discard</button>
+    <button id="btnEndCancel" class="btn btn-ghost" type="button">Keep growing</button>
+  </div>
+</dialog>
 
-function loop() {
-  if (!running) return;
-  const now = performance.now();
-  const dt = now - lastTick; lastTick = now;
+<!-- ----------------------- Specimen jar ----------------------- -->
+<dialog id="dlgJar" class="dlg dlg-jar" aria-labelledby="jarTitle">
+  <div class="dlg-head">
+    <h2 id="jarTitle" class="dlg-title jar-title">Specimen</h2>
+    <button id="btnJarClose" class="icon-btn" type="button" aria-label="Close specimen"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="dlg-body jar-body">
+    <div class="jar-stage">
+      <canvas id="jarCanvas" class="jar-detail-canvas" width="280" height="280" aria-hidden="true"></canvas>
+    </div>
+    <div class="jar-info">
+      <p id="jarMeta" class="specimen-label"></p>
+      <div id="jarStats" class="tiles tiles-compact"></div>
+      <p id="jarDiagnosis" class="diagnosis"></p>
+    </div>
+  </div>
+  <div class="dlg-actions">
+    <button id="btnJarKeepsake" class="btn btn-primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span class="btn-label">Save keepsake</span></button>
+    <button id="btnJarDelete" class="btn btn-danger" type="button"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><span class="btn-label">Delete</span></button>
+  </div>
+</dialog>
 
-  let r = null;
-  if (document.hidden) r = { s: "hidden", why: "You switched tabs or minimized the window." };
-  else if (video.currentTime !== lastVideoTime) { lastVideoTime = video.currentTime; r = evaluate(now); }
+<!-- ----------------------- Erase ----------------------- -->
+<dialog id="dlgErase" class="dlg dlg-confirm" aria-labelledby="dlgEraseTitle" aria-describedby="dlgEraseBody">
+  <div class="dlg-head">
+    <h2 id="dlgEraseTitle" class="dlg-title">Erase every specimen, setting and calibration?</h2>
+  </div>
+  <div class="dlg-body">
+    <p id="dlgEraseBody">This can't be undone. Export first if you want a copy.</p>
+  </div>
+  <div class="dlg-actions">
+    <button id="btnEraseCancel" class="btn btn-ghost" type="button">Cancel</button>
+    <button id="btnEraseConfirm" class="btn btn-danger" type="button"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><span class="btn-label">Erase everything</span></button>
+  </div>
+</dialog>
 
-  if (r) {
-    if (r.s === "calibrating") setState("calibrating", r.why);
-    else if (r.s === "focused") { offSince = null; setState("focused", ""); }
-    else {
-      offSince ??= now;
-      if (now - offSince > DEBOUNCE_MS || r.s === "hidden") setState(r.s, r.why);
-    }
-  }
-
-  if (state !== "calibrating") {
-    totalMs += dt;
-    if (state === "focused") focusedMs += dt;
-    const target = state === "focused" ? 100 : 0;
-    score += (target - score) * Math.min(1, dt / 800);
-    history.push({ t: now, s: state });
-  }
-  while (history.length && now - history[0].t > 60000) history.shift();
-  render(now);
-  requestAnimationFrame(loop);
-}
-
-// Keep counting while the tab is hidden (rAF pauses in background tabs)
-setInterval(() => { if (running && document.hidden) { lastTick = performance.now(); } }, 1000);
-document.addEventListener("visibilitychange", () => {
-  if (!running) return;
-  if (document.hidden) { setState("hidden", "You switched tabs or minimized the window."); hiddenAt = performance.now(); }
-  else if (hiddenAt) { const d = performance.now() - hiddenAt; totalMs += d; history.push({ t: performance.now() - 1, s: "hidden" }); hiddenAt = 0; lastTick = performance.now(); }
-});
-let hiddenAt = 0;
-
-function render(now) {
-  const fill = $("meterFill");
-  fill.style.width = score.toFixed(0) + "%";
-  fill.style.background = cssVar(score > 66 ? "--good" : score > 33 ? "--warn" : "--bad");
-  $("focusPct").textContent = totalMs > 0 ? Math.round((focusedMs / totalMs) * 100) + "%" : "–";
-  $("distractions").textContent = distractions;
-  $("streak").textContent = state === "focused" && streakStart ? fmt(now - streakStart) : "0s";
-
-  const dpr = window.devicePixelRatio || 1;
-  const w = tl.clientWidth, h = tl.clientHeight;
-  if (tl.width !== w * dpr) { tl.width = w * dpr; tl.height = h * dpr; }
-  tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  tctx.clearRect(0, 0, w, h);
-  for (let i = 0; i < history.length; i++) {
-    const a = history[i], bEnd = history[i + 1]?.t ?? now;
-    const x = w - ((now - a.t) / 60000) * w, x2 = w - ((now - bEnd) / 60000) * w;
-    tctx.fillStyle = cssVar(STATES[a.s].color);
-    tctx.fillRect(x, 0, Math.max(1, x2 - x + 0.5), h);
-  }
-}
-
-function fmt(ms) {
-  const s = Math.floor(ms / 1000);
-  return s < 60 ? s + "s" : Math.floor(s / 60) + "m " + (s % 60) + "s";
-}
-
-$("startBtn").onclick = () => (running ? stop() : start());
-$("calBtn").onclick = recalibrate;
-$("resetBtn").onclick = () => { focusedMs = totalMs = distractions = 0; history.length = 0; streakStart = performance.now(); };
-$("showVideo").onchange = (e) => $("videoWrap").classList.toggle("hidden", !e.target.checked);
-</script>
 </body>
 </html>
