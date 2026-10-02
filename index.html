@@ -6,12 +6,12 @@
 <meta http-equiv="Content-Security-Policy" content="connect-src https://cdn.jsdelivr.net https://storage.googleapis.com; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; object-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#04080A">
-<meta name="description" content="A focus timer with a pulse. Your webcam reads attention on this device, and a glowing organism grows while you stay with your work.">
-<title>Hypha — focus, grown in light</title>
+<meta name="description" content="A Pomodoro-style focus timer that uses your webcam, on this device only, to measure how much of each session you spend focused.">
+<title>Focus Tracker</title>
 <link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230B1719'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%237CF5D0'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400..600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400..600&display=swap">
 <link rel="stylesheet" href="css/style.css">
 <script src="js/core.js" defer></script>
 <script src="js/detector.js" defer></script>
@@ -33,23 +33,14 @@
 <!-- ============================================================ -->
 <canvas id="stage" aria-hidden="true"></canvas>
 <div id="vignette" aria-hidden="true"></div>
-<div id="grain" aria-hidden="true"></div>
 <video id="camVideo" playsinline muted autoplay aria-hidden="true" tabindex="-1"></video>
 
 <!-- Icon sprite: 24x24, stroke currentColor 1.5, round caps and joins. -->
 <svg id="icons" hidden xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <symbol id="i-spore" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/>
-    <path d="M12 9.2Q9.8 5.9 12 2.6"/>
-    <path d="M14.8 11.1Q17.1 8 21 9.1"/>
-    <path d="M13.7 14.4Q17.4 15.6 17.6 19.7"/>
-    <path d="M10.3 14.4Q10.2 18.3 6.4 19.7"/>
-    <path d="M9.2 11.1Q5.5 12.2 3 9.1"/>
-    <circle cx="12" cy="2.6" r=".7" fill="currentColor" stroke="none"/>
-    <circle cx="21" cy="9.1" r=".7" fill="currentColor" stroke="none"/>
-    <circle cx="17.6" cy="19.7" r=".7" fill="currentColor" stroke="none"/>
-    <circle cx="6.4" cy="19.7" r=".7" fill="currentColor" stroke="none"/>
-    <circle cx="3" cy="9.1" r=".7" fill="currentColor" stroke="none"/>
+  <symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="8.5" stroke-opacity=".35"/>
+    <path d="M12 3.5a8.5 8.5 0 1 1-8.5 8.5" stroke-width="2"/>
+    <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/>
   </symbol>
   <symbol id="i-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
     <path d="M4 9.5h3l4.5-4v13L7 14.5H4z"/>
@@ -76,12 +67,14 @@
     <path d="M9.6 9.4a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1.1.8-1.1 1.5v.5"/>
     <circle cx="12" cy="16.6" r=".9" fill="currentColor" stroke="none"/>
   </symbol>
-  <symbol id="i-jar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M7.5 3.5h9"/>
-    <path d="M9 3.5v2.3a1 1 0 0 1-.6.9A4.5 4.5 0 0 0 5.5 11v7A2.5 2.5 0 0 0 8 20.5h8a2.5 2.5 0 0 0 2.5-2.5v-7a4.5 4.5 0 0 0-2.9-4.3 1 1 0 0 1-.6-.9V3.5"/>
-    <path d="M12 17.8v-4.6"/>
-    <path d="M12 15.4c-1.7 0-2.7-.9-2.9-2.5 1.6 0 2.7.9 2.9 2.5z"/>
-    <path d="M12 14.2c.2-1.4 1.1-2.2 2.6-2.3-.1 1.5-1 2.3-2.6 2.3z"/>
+  <symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/>
+    <path d="M4.4 4.4v4.2h4.2"/>
+    <path d="M12 8v4.3l2.9 1.8"/>
+  </symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="8.5" r="3.6"/>
+    <path d="M5 19.6c1.2-3.3 3.8-5.1 7-5.1s5.8 1.8 7 5.1"/>
   </symbol>
   <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
     <rect x="7" y="5.5" width="3" height="13" rx="1.2"/>
@@ -93,10 +86,10 @@
   <symbol id="i-stop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
     <rect x="6" y="6" width="12" height="12" rx="3"/>
   </symbol>
-  <symbol id="i-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M19.2 4.8C10.6 4.9 5.2 9.4 5.2 16.4c0 1 .1 1.8.3 2.6.8.2 1.6.3 2.6.3 7 0 11.4-5.3 11.1-14.5z"/>
-    <path d="M4.5 19.8c3-4.4 6.6-8 10.6-10.8"/>
-    <path d="M9.6 14.6l3.3.4M12.1 11.9l2.6-.2"/>
+  <symbol id="i-break" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 10h11v4.5a4.5 4.5 0 0 1-4.5 4.5h-2A4.5 4.5 0 0 1 5 14.5z"/>
+    <path d="M16 11.5h1.4a2.3 2.3 0 0 1 0 4.6H16"/>
+    <path d="M8.5 4.5c-.6.9-.6 1.8 0 2.7M12 4.5c-.6.9-.6 1.8 0 2.7"/>
   </symbol>
   <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
     <path d="M2.6 12S6.1 5.6 12 5.6 21.4 12 21.4 12 17.9 18.4 12 18.4 2.6 12 2.6 12z"/>
@@ -165,18 +158,19 @@
 <!-- ============================================================ -->
 <header id="topbar" class="topbar">
   <div class="topbar-left">
-    <button id="brand" class="brand" type="button" aria-label="hypha, back to setup">
-      <svg class="icon brand-icon" aria-hidden="true"><use href="#i-spore"/></svg>
-      <span class="wordmark" aria-hidden="true">hypha</span>
+    <button id="brand" class="brand" type="button" aria-label="Focus Tracker, back to setup">
+      <svg class="icon brand-icon" aria-hidden="true"><use href="#i-logo"/></svg>
+      <span class="wordmark" aria-hidden="true">Focus Tracker</span>
     </button>
     <p id="todayStat" class="today-stat">Today —</p>
   </div>
   <nav class="topbar-right" aria-label="Tools">
     <button id="btnSound" class="icon-btn has-tip" type="button" aria-label="Sound" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-sound-off"/></svg></button>
     <button id="btnPip" class="icon-btn has-tip" type="button" aria-label="Pop out"><svg class="icon" aria-hidden="true"><use href="#i-popout"/></svg></button>
-    <button id="btnHistory" class="icon-btn has-tip" type="button" aria-label="Terrarium"><svg class="icon" aria-hidden="true"><use href="#i-jar"/></svg></button>
+    <button id="btnHistory" class="icon-btn has-tip" type="button" aria-label="History"><svg class="icon" aria-hidden="true"><use href="#i-history"/></svg></button>
     <button id="btnSettings" class="icon-btn has-tip" type="button" aria-label="Settings"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg></button>
     <button id="btnHelp" class="icon-btn has-tip" type="button" aria-label="Help &amp; shortcuts"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg></button>
+    <button id="btnAbout" class="icon-btn has-tip" type="button" aria-label="About"><svg class="icon" aria-hidden="true"><use href="#i-user"/></svg></button>
   </nav>
 </header>
 
@@ -211,31 +205,31 @@
 <!-- ============================================================ -->
 <main class="screens">
   <!-- ======================= Intro ======================= -->
-  <section class="screen" id="screen-intro" hidden aria-label="Welcome to Hypha">
-    <p class="intro-mark" aria-hidden="true"><svg class="icon"><use href="#i-spore"/></svg><span class="wordmark">hypha</span></p>
+  <section class="screen" id="screen-intro" hidden aria-label="Welcome to Focus Tracker">
+    <p class="intro-mark" aria-hidden="true"><svg class="icon"><use href="#i-logo"/></svg><span class="wordmark">Focus Tracker</span></p>
     <div id="introCard" class="card glass intro-card">
       <button id="btnIntroSkip" class="btn btn-text btn-sm intro-skip" type="button">Skip</button>
 
       <div id="introStep0" class="intro-step">
-        <p class="mono-label intro-kicker">01 · Germinate</p>
-        <h1 class="intro-h1">Your attention, grown into living light.</h1>
-        <p class="intro-body">Hypha is a focus timer with a pulse. While your face says you're with your work, a glowing network grows. Turn away and it flinches. Leave and it rests. Every blink sends a heartbeat of light through it.</p>
+        <p class="mono-label intro-kicker">01 · Welcome</p>
+        <h1 class="intro-h1">A focus timer that notices when you drift.</h1>
+        <p class="intro-body">Focus Tracker is a Pomodoro-style timer that uses your webcam to tell when you're looking at your work. It counts your focused time, notices when you look away or check your phone, and shows you how each session went.</p>
       </div>
 
       <div id="introStep1" class="intro-step" hidden>
         <p class="mono-label intro-kicker">02 · Privacy</p>
         <h2 class="intro-h2">The camera sees 478 dots, not you.</h2>
-        <p class="intro-body">Face tracking runs entirely in this tab. No video or images are recorded, stored, or sent: only focus numbers, kept on this device. Try it: once Hypha has loaded, go offline. It keeps working.</p>
+        <p class="intro-body">Face tracking runs entirely in this tab. No video or images are recorded, stored, or sent: only focus numbers, kept on this device. Try it: once the page has loaded, go offline. It keeps working.</p>
         <button id="btnIntroPrivacy" class="btn btn-text" type="button"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg><span class="btn-label">How privacy works</span></button>
       </div>
 
       <div id="introStep2" class="intro-step" hidden>
         <p class="mono-label intro-kicker">03 · Signals</p>
-        <h2 class="intro-h2">It speaks in light.</h2>
-        <p class="intro-body">Watch what it does when attention moves.</p>
+        <h2 class="intro-h2">See your focus at a glance.</h2>
+        <p class="intro-body">The ring changes color as your attention moves.</p>
         <div class="intro-demo">
-          <p id="introDemoWord" class="intro-demo-word" data-word="rooted">rooted</p>
-          <p id="introDemoGloss" class="intro-demo-gloss">Eyes on your work, so it grows.</p>
+          <p id="introDemoWord" class="intro-demo-word" data-word="focused">focused</p>
+          <p id="introDemoGloss" class="intro-demo-gloss">Eyes on your work. Focused time counts up.</p>
         </div>
       </div>
 
@@ -261,12 +255,12 @@
       </div>
 
       <div id="setupCard" class="card glass setup-card">
-        <h1 id="setupTitle" class="sr-only">Plant a focus session</h1>
+        <h1 id="setupTitle" class="sr-only">Start a focus session</h1>
         <form id="setupForm" novalidate>
           <div class="field">
-            <label for="intention" class="field-label">What are you growing?</label>
+            <label for="intention" class="field-label">What are you working on?</label>
             <input id="intention" name="intention" class="input input-intention" type="text" maxlength="80" autocomplete="off" spellcheck="false" placeholder="e.g. chapter three edits" aria-describedby="intentionHelp">
-            <p id="intentionHelp" class="help">Optional. It names your specimen.</p>
+            <p id="intentionHelp" class="help">Optional. Shown on your session summary.</p>
           </div>
 
           <fieldset class="field">
@@ -306,7 +300,7 @@
             </div>
           </div>
 
-          <button id="btnBegin" class="btn btn-primary btn-lg btn-block" type="submit">Plant &amp; begin</button>
+          <button id="btnBegin" class="btn btn-primary btn-lg btn-block" type="submit">Start session</button>
 
           <div class="setup-secondary">
             <button id="btnTimerOnly" class="btn btn-ghost btn-sm" type="button">Timer only (no camera)</button>
@@ -318,9 +312,10 @@
       </div>
 
       <nav id="setupLinks" class="setup-links" aria-label="More">
-        <button id="linkHistory" class="btn btn-text btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-jar"/></svg><span class="btn-label">Terrarium</span></button>
+        <button id="linkHistory" class="btn btn-text btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-history"/></svg><span class="btn-label">History</span></button>
         <button id="linkPrivacy" class="btn btn-text btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg><span class="btn-label">Privacy</span></button>
         <button id="linkHelp" class="btn btn-text btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg><span class="btn-label">Shortcuts</span></button>
+        <button id="linkAbout" class="btn btn-text btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-user"/></svg><span class="btn-label">About</span></button>
       </nav>
     </div>
   </section>
@@ -329,7 +324,7 @@
   <section class="screen" id="screen-permission" hidden aria-labelledby="permTitle">
     <div class="setup-col">
       <div class="card glass perm-card">
-        <h2 id="permTitle" class="card-title">Let Hypha see your face, only here.</h2>
+        <h2 id="permTitle" class="card-title">Allow the camera, only for this tab.</h2>
         <ul class="perm-list">
           <li><span class="perm-icon"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></span><span>The face model runs inside this tab. Frames never leave it.</span></li>
           <li><span class="perm-icon"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg></span><span>Nothing is recorded. Only focus numbers are saved, on this device.</span></li>
@@ -356,14 +351,14 @@
     </div>
   </section>
 
-  <!-- ======================= Calibration ("Germination") ======================= -->
+  <!-- ======================= Calibration ======================= -->
   <section class="screen" id="screen-calibrate" hidden aria-labelledby="calText">
     <div class="card glass cal-card">
       <div class="cal-top">
-        <p id="calStep" class="mono-label">Seed 1 of 5</p>
+        <p id="calStep" class="mono-label">Point 1 of 5</p>
         <p id="calQuality" class="quality-pill" data-quality="good">Tracking: good</p>
       </div>
-      <p id="calText" class="cal-text" aria-live="polite">Sit as you usually work. Look at the glowing spore.</p>
+      <p id="calText" class="cal-text" aria-live="polite">Sit as you usually work. Look at the dot in the center.</p>
       <p id="calHint" class="cal-hint" aria-live="polite"></p>
       <div class="cal-actions">
         <button id="btnCalSkip" class="btn btn-ghost btn-sm" type="button">Skip corners</button>
@@ -379,7 +374,7 @@
     <div class="banners">
       <div id="cameraBanner" class="banner glass" role="region" aria-label="Camera status" hidden>
         <svg class="icon banner-icon" aria-hidden="true"><use href="#i-eye-off"/></svg>
-        <p id="cameraBannerText" class="banner-text">Camera disconnected. Your session continues, and the network rests until it's back.</p>
+        <p id="cameraBannerText" class="banner-text">Camera disconnected. Your session continues, but focus isn't tracked until it's back.</p>
         <div class="banner-actions">
           <button id="btnCamRetry" class="btn btn-primary btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg><span class="btn-label">Reconnect</span></button>
           <button id="btnCamTimer" class="btn btn-ghost btn-sm" type="button">Continue as timer</button>
@@ -389,7 +384,7 @@
         <svg class="icon banner-icon" aria-hidden="true"><use href="#i-eye-off"/></svg>
         <p class="banner-text">Your eyes are getting heavy. A 5-minute break might help.</p>
         <div class="banner-actions">
-          <button id="btnDrowsyBreak" class="btn btn-primary btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg><span class="btn-label">Take a break</span></button>
+          <button id="btnDrowsyBreak" class="btn btn-primary btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-break"/></svg><span class="btn-label">Take a break</span></button>
           <button id="btnDrowsyDismiss" class="btn btn-ghost btn-sm" type="button">Not now</button>
         </div>
       </div>
@@ -399,7 +394,7 @@
       <div id="breakPanel" class="panel glass state-panel" role="region" aria-labelledby="breakTitle" hidden>
         <div class="panel-text">
           <h3 id="breakTitle" class="panel-title">Rest your eyes.</h3>
-          <p id="breakText" class="panel-body">Look at something far away. The lid gathers dew while you do.</p>
+          <p id="breakText" class="panel-body">Look at something far away to rest your eyes.</p>
           <p id="breakRest" class="break-rest">0s of 20s looking away</p>
         </div>
         <div class="panel-actions">
@@ -433,16 +428,16 @@
         <p id="timer" class="timer" role="timer">0:00</p>
         <p id="roundText" class="round-text" hidden>Round 1 of 4</p>
         <p id="intentionText" class="intention-text" hidden></p>
-        <p class="state-line"><span id="stateWord" class="state-word">rooted</span></p>
+        <p class="state-line"><span id="stateWord" class="state-word">focused</span></p>
         <p id="stateReason" class="sr-only"></p>
       </div>
     </div>
 
     <button id="btnFruitSkip" class="btn btn-text fruit-skip" type="button" hidden>Skip</button>
 
-    <button id="btnNotes" class="notes-tab" type="button" aria-expanded="false" aria-controls="notes"><svg class="icon" aria-hidden="true"><use href="#i-notes"/></svg><span class="btn-label">Field notes</span></button>
+    <button id="btnNotes" class="notes-tab" type="button" aria-expanded="false" aria-controls="notes"><svg class="icon" aria-hidden="true"><use href="#i-notes"/></svg><span class="btn-label">Stats</span></button>
     <div id="controls" class="controls" role="group" aria-label="Session controls">
-      <button id="btnBreak" class="ctrl" type="button"><span class="ctrl-icon"><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg></span><span class="btn-label">Break</span></button>
+      <button id="btnBreak" class="ctrl" type="button"><span class="ctrl-icon"><svg class="icon" aria-hidden="true"><use href="#i-break"/></svg></span><span class="btn-label">Break</span></button>
       <button id="btnPause" class="ctrl ctrl-main" type="button" aria-pressed="false"><span class="ctrl-icon"><svg class="icon" aria-hidden="true"><use href="#i-pause"/></svg></span><span class="btn-label">Pause</span></button>
       <button id="btnEnd" class="ctrl" type="button"><span class="ctrl-icon"><svg class="icon" aria-hidden="true"><use href="#i-stop"/></svg></span><span class="btn-label">End</span></button>
     </div>
@@ -450,18 +445,18 @@
     <div id="notesBackdrop" class="notes-backdrop" hidden></div>
     <aside id="notes" class="notes" aria-labelledby="notesTitle">
       <div class="sheet-handle" aria-hidden="true"></div>
-      <h2 id="notesTitle" class="notes-title">Field notes</h2>
+      <h2 id="notesTitle" class="notes-title">Stats</h2>
       <figure class="spark">
         <canvas id="notesSpark" class="spark-canvas" width="268" height="56" aria-hidden="true"></canvas>
         <figcaption class="spark-cap"><span>focus · last 5 min</span><span>now</span></figcaption>
       </figure>
       <dl class="notes-stats">
-        <div class="stat-row"><dt>Held</dt><dd><span id="nHeld">–</span> <span id="nHeldTime" class="dd-sub">–</span></dd></div>
-        <div class="stat-row"><dt>Current root</dt><dd id="nStreak">–</dd></div>
-        <div class="stat-row"><dt>Longest root</dt><dd id="nLongest">–</dd></div>
-        <div class="stat-row"><dt>Scars</dt><dd id="nScars">–</dd></div>
-        <div class="stat-row stat-gold"><dt>Returns</dt><dd id="nReturns">–</dd></div>
-        <div class="stat-row"><dt>Depth</dt><dd id="nDepth">–</dd></div>
+        <div class="stat-row"><dt>Focused</dt><dd><span id="nHeld">–</span> <span id="nHeldTime" class="dd-sub">–</span></dd></div>
+        <div class="stat-row"><dt>Current streak</dt><dd id="nStreak">–</dd></div>
+        <div class="stat-row"><dt>Longest streak</dt><dd id="nLongest">–</dd></div>
+        <div class="stat-row"><dt>Distractions</dt><dd id="nScars">–</dd></div>
+        <div class="stat-row stat-gold"><dt>Refocuses</dt><dd id="nReturns">–</dd></div>
+        <div class="stat-row"><dt>Focus depth</dt><dd id="nDepth">–</dd></div>
         <div class="stat-row"><dt>Blinks</dt><dd id="nBlink">—</dd></div>
         <div class="stat-row"><dt>Drowsy</dt><dd id="nDrowsy">none</dd></div>
       </dl>
@@ -476,19 +471,19 @@
   <section class="screen" id="screen-summary" hidden aria-labelledby="specimenName">
     <article id="summarySheet" class="sheet glass summary-sheet">
       <p id="specimenLabel" class="specimen-label"></p>
-      <h1 class="specimen-title"><span id="specimenName" class="specimen-name">Hypha</span> <span id="specimenVar" class="specimen-var"></span></h1>
+      <h1 class="specimen-title"><span id="specimenName" class="specimen-name">Focus session</span> <span id="specimenVar" class="specimen-var"></span></h1>
 
       <div id="sumGrid" class="tiles">
-        <div class="tile tile-hero"><b class="tile-v" id="sumHeld">–</b><span class="tile-c" id="sumHeldOf">held of –</span></div>
+        <div class="tile tile-hero"><b class="tile-v" id="sumHeld">–</b><span class="tile-c" id="sumHeldOf">focused of –</span></div>
         <div class="tile"><b class="tile-v" id="sumPct">–</b><span class="tile-c">focus</span></div>
-        <div class="tile"><b class="tile-v" id="sumLongest">–</b><span class="tile-c">longest root</span></div>
-        <div class="tile tile-gold"><b class="tile-v" id="sumReturns">–</b><span class="tile-c" id="sumRecovery">returns</span></div>
+        <div class="tile"><b class="tile-v" id="sumLongest">–</b><span class="tile-c">longest streak</span></div>
+        <div class="tile tile-gold"><b class="tile-v" id="sumReturns">–</b><span class="tile-c" id="sumRecovery">refocuses</span></div>
         <div class="tile"><b class="tile-v" id="sumDepth">–</b><span class="tile-c">peak depth</span></div>
-        <div class="tile"><b class="tile-v" id="sumRoot">–</b><span class="tile-c">time to root</span></div>
+        <div class="tile"><b class="tile-v" id="sumRoot">–</b><span class="tile-c">time to focus</span></div>
         <div class="tile"><b class="tile-v" id="sumBlink">–</b><span class="tile-c">blinks</span></div>
         <div class="tile"><b class="tile-v" id="sumDrowsy">–</b><span class="tile-c">drowsy moments</span></div>
       </div>
-      <p id="sumUnmeasured" class="note-line" hidden>Timer-only time isn't measured; it counts as held.</p>
+      <p id="sumUnmeasured" class="note-line" hidden>Timer-only time isn't measured; it counts as focused.</p>
 
       <figure class="strip">
         <canvas id="sumTimeline" class="strip-canvas"></canvas>
@@ -510,29 +505,29 @@
       </div>
 
       <div class="sheet-actions">
-        <button id="btnKeepsake" class="btn btn-primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span class="btn-label">Save keepsake</span></button>
-        <button id="btnToTerrarium" class="btn btn-ghost" type="button"><svg class="icon" aria-hidden="true"><use href="#i-jar"/></svg><span class="btn-label">Terrarium</span></button>
-        <button id="btnAgain" class="btn btn-ghost" type="button"><svg class="icon" aria-hidden="true"><use href="#i-spore"/></svg><span class="btn-label">Grow another</span></button>
+        <button id="btnKeepsake" class="btn btn-primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span class="btn-label">Save image</span></button>
+        <button id="btnToTerrarium" class="btn btn-ghost" type="button"><svg class="icon" aria-hidden="true"><use href="#i-history"/></svg><span class="btn-label">History</span></button>
+        <button id="btnAgain" class="btn btn-ghost" type="button"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg><span class="btn-label">New session</span></button>
       </div>
     </article>
   </section>
 
-  <!-- ======================= Terrarium ======================= -->
+  <!-- ======================= History ======================= -->
   <section class="screen" id="screen-history" hidden aria-labelledby="histTitle">
     <div class="hist-wrap">
       <header class="hist-head">
         <button id="btnHistBack" class="btn btn-ghost btn-sm" type="button"><svg class="icon" aria-hidden="true"><use href="#i-chevron-left"/></svg><span class="btn-label">Back</span></button>
         <div class="hist-titles">
-          <h1 id="histTitle" class="hist-title">Terrarium</h1>
+          <h1 id="histTitle" class="hist-title">History</h1>
           <p id="histTotals" class="hist-totals"></p>
         </div>
         <p id="histStreak" class="streak-chip"></p>
       </header>
 
       <div id="histEmpty" class="hist-empty" hidden>
-        <svg class="icon hist-empty-icon" aria-hidden="true"><use href="#i-spore"/></svg>
-        <p class="hist-empty-title">Your terrarium is empty.</p>
-        <p class="hist-empty-body">Grow your first specimen. It takes one focus session.</p>
+        <svg class="icon hist-empty-icon" aria-hidden="true"><use href="#i-logo"/></svg>
+        <p class="hist-empty-title">No sessions yet.</p>
+        <p class="hist-empty-body">Finish a focus session and it will show up here.</p>
         <button id="btnHistStart" class="btn btn-primary" type="button">Start a session</button>
       </div>
 
@@ -544,7 +539,7 @@
         </section>
 
         <section class="hist-sec sec-shelves" aria-labelledby="hShelves">
-          <h2 id="hShelves" class="sec-title">Shelves</h2>
+          <h2 id="hShelves" class="sec-title">Sessions</h2>
           <div id="shelves" class="shelves"></div>
         </section>
 
@@ -686,7 +681,7 @@
         <input id="setSoundscape" class="switch" type="checkbox" checked>
       </div>
       <div class="set-row set-check">
-        <label for="setChimes">Chimes (blinks, returns, milestones)</label>
+        <label for="setChimes">Chimes (refocus, milestones)</label>
         <input id="setChimes" class="switch" type="checkbox" checked>
       </div>
       <div class="set-row set-range">
@@ -698,7 +693,7 @@
         <input id="setNudgeSound" class="switch" type="checkbox" checked>
       </div>
       <div class="set-row set-check">
-        <label for="setNotify">Notify me when I drift while Hypha is hidden</label>
+        <label for="setNotify">Notify me when I drift while this tab is hidden</label>
         <input id="setNotify" class="switch" type="checkbox">
       </div>
       <div class="set-row set-check">
@@ -773,13 +768,13 @@
     <button id="btnPrivacyClose" class="icon-btn" type="button" aria-label="Close privacy"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
   </div>
   <div class="dlg-body prose">
-    <p class="lede">A focus timer with a pulse. Your webcam reads attention on this device, and a glowing organism grows while you stay with your work.</p>
+    <p class="lede">A focus timer that uses your webcam, on this device only, to measure how much of each session you spend focused.</p>
 
     <h3>What the camera sees.</h3>
-    <p>The face model (MediaPipe, running in your browser) turns each frame into 478 points and a few expression scores. Hypha keeps only numbers like head angle and eye openness, for the current moment only.</p>
+    <p>The face model (MediaPipe, running in your browser) turns each frame into 478 points and a few expression scores. The app keeps only numbers like head angle and eye openness, for the current moment only.</p>
 
     <h3>What's stored.</h3>
-    <p>Session numbers (timings, focus levels, your specimen's seed) in this browser's local storage. Never frames or images.</p>
+    <p>Session numbers (timings and focus levels) in this browser's local storage. Never frames or images.</p>
 
     <h3>What's downloaded.</h3>
     <p>Downloads only:</p>
@@ -802,10 +797,10 @@
     <pre id="privCsp" class="csp"></pre>
 
     <h3>Test it yourself.</h3>
-    <p>After Hypha loads, turn off Wi-Fi. Tracking keeps working.</p>
+    <p>After the page loads, turn off Wi-Fi. Tracking keeps working.</p>
 
     <p class="honesty">If "Blocked by policy" isn't 0, that's the lock working. The MediaPipe engine tries to send a small usage-log ping to Google (odml.pa.googleapis.com), and this policy stops it. Your browser console shows it as a blocked request.</p>
-    <p class="honesty">A policy is strong evidence, not proof. It can't stop a page from navigating away, for example. Hypha has no upload code at all, and its files are plain and readable.</p>
+    <p class="honesty">A policy is strong evidence, not proof. It can't stop a page from navigating away, for example. This app has no upload code at all, and its files are plain and readable.</p>
   </div>
 </dialog>
 
@@ -826,51 +821,66 @@
         <tr><td><kbd>Enter</kbd></td><td>Intention field</td><td>Begin</td></tr>
         <tr><td><kbd>Esc</kbd></td><td>Anywhere</td><td>Close the topmost menu, drawer or dialog</td></tr>
         <tr><td><kbd>Esc</kbd></td><td>Calibration</td><td>Cancel calibration</td></tr>
-        <tr><td><kbd>Esc</kbd></td><td>Fruiting</td><td>Skip fruiting</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Session end</td><td>Skip the end animation</td></tr>
         <tr><td><kbd>B</kbd></td><td>Session</td><td>Break now / skip break</td></tr>
         <tr><td><kbd>E</kbd></td><td>Session</td><td>End the session…</td></tr>
         <tr><td><kbd>R</kbd> / <kbd>Shift</kbd>+<kbd>R</kbd></td><td>Session, or Setup with the camera on</td><td>Recalibrate: quick / full</td></tr>
         <tr><td><kbd>C</kbd></td><td>Camera on</td><td>Cycle the eye preview: dots → video → hidden</td></tr>
         <tr><td><kbd>L</kbd></td><td>Any</td><td>Lens cap on / off</td></tr>
         <tr><td><kbd>M</kbd></td><td>Any</td><td>Sound on / off</td></tr>
-        <tr><td><kbd>N</kbd></td><td>Session</td><td>Toggle field notes</td></tr>
+        <tr><td><kbd>N</kbd></td><td>Session</td><td>Toggle stats</td></tr>
         <tr><td><kbd>F</kbd></td><td>Session</td><td>“That was fine”: forgive the last drift</td></tr>
         <tr><td><kbd>T</kbd></td><td>Session</td><td>Say the time, focus and state</td></tr>
-        <tr><td><kbd>H</kbd></td><td>Not in a session</td><td>Terrarium</td></tr>
+        <tr><td><kbd>H</kbd></td><td>Not in a session</td><td>History</td></tr>
         <tr><td><kbd>S</kbd> or <kbd>,</kbd></td><td>Any</td><td>Settings</td></tr>
         <tr><td><kbd>P</kbd></td><td>Session</td><td>Pop out a mini window</td></tr>
-        <tr><td><kbd>K</kbd></td><td>Summary, specimen jar</td><td>Save keepsake</td></tr>
+        <tr><td><kbd>K</kbd></td><td>Summary, session details</td><td>Save image</td></tr>
         <tr><td><kbd>?</kbd></td><td>Any</td><td>This help</td></tr>
         <tr><td><kbd>1</kbd>–<kbd>7</kbd></td><td>Demo session</td><td>Simulate: focus, glance, turn, phone, eyes closed, leave, drowsy</td></tr>
         <tr><td><kbd>D</kbd></td><td>With <code>?debug=1</code></td><td>Toggle the debug panel</td></tr>
       </tbody>
     </table>
 
-    <h3 class="help-h">State words</h3>
+    <h3 class="help-h">States</h3>
     <ul class="legend">
-      <li><span class="swatch" data-word="rooted"></span><b class="lg-word" data-word="rooted">rooted</b><span class="lg-gloss">Eyes on your work, so it grows.</span></li>
-      <li><span class="swatch" data-word="wavering"></span><b class="lg-word" data-word="wavering">wavering</b><span class="lg-gloss">Attention near the edge, so growth slows.</span></li>
-      <li><span class="swatch" data-word="shy"></span><b class="lg-word" data-word="shy">shy</b><span class="lg-gloss">You turned, glanced or looked up. It flinches from that side.</span></li>
-      <li><span class="swatch" data-word="sinking"></span><b class="lg-word" data-word="sinking">sinking</b><span class="lg-gloss">Looking down, often at a phone. The light drains downward.</span></li>
-      <li><span class="swatch" data-word="elsewhere"></span><b class="lg-word" data-word="elsewhere">elsewhere</b><span class="lg-gloss">Another tab has focus (only with the strict tab setting).</span></li>
-      <li><span class="swatch" data-word="asleep"></span><b class="lg-word" data-word="asleep">asleep</b><span class="lg-gloss">Eyes closed. It rests with you, in amber.</span></li>
-      <li><span class="swatch" data-word="dormant"></span><b class="lg-word" data-word="dormant">dormant</b><span class="lg-gloss">You stepped away. It waits, and your timer can pause.</span></li>
-      <li><span class="swatch" data-word="unseen"></span><b class="lg-word" data-word="unseen">unseen</b><span class="lg-gloss">The camera couldn't see clearly. Never counted against you.</span></li>
-      <li><span class="swatch" data-word="growing"></span><b class="lg-word" data-word="growing">growing</b><span class="lg-gloss">Timer only. Nothing is measured; the time counts as held.</span></li>
-      <li><span class="swatch" data-word="resting"></span><b class="lg-word" data-word="resting">resting</b><span class="lg-gloss">A break. Dew gathers while you look away.</span></li>
+      <li><span class="swatch" data-word="focused"></span><b class="lg-word" data-word="focused">focused</b><span class="lg-gloss">Eyes on your work. Focused time counts up.</span></li>
+      <li><span class="swatch" data-word="drifting"></span><b class="lg-word" data-word="drifting">drifting</b><span class="lg-gloss">Your attention is near the edge of the screen.</span></li>
+      <li><span class="swatch" data-word="looking away"></span><b class="lg-word" data-word="looking away">looking away</b><span class="lg-gloss">You turned, glanced aside or looked up.</span></li>
+      <li><span class="swatch" data-word="looking down"></span><b class="lg-word" data-word="looking down">looking down</b><span class="lg-gloss">Looking down, often at a phone.</span></li>
+      <li><span class="swatch" data-word="other tab"></span><b class="lg-word" data-word="other tab">other tab</b><span class="lg-gloss">Another tab has focus (only with the strict tab setting).</span></li>
+      <li><span class="swatch" data-word="eyes closed"></span><b class="lg-word" data-word="eyes closed">eyes closed</b><span class="lg-gloss">Eyes closed. Short pauses to think are fine.</span></li>
+      <li><span class="swatch" data-word="away"></span><b class="lg-word" data-word="away">away</b><span class="lg-gloss">You stepped away. The timer can pause until you're back.</span></li>
+      <li><span class="swatch" data-word="not visible"></span><b class="lg-word" data-word="not visible">not visible</b><span class="lg-gloss">The camera couldn't see clearly. Never counted against you.</span></li>
+      <li><span class="swatch" data-word="timer only"></span><b class="lg-word" data-word="timer only">timer only</b><span class="lg-gloss">No camera. Nothing is measured; all the time counts as focused.</span></li>
+      <li><span class="swatch" data-word="break"></span><b class="lg-word" data-word="break">break</b><span class="lg-gloss">A break between rounds.</span></li>
       <li><span class="swatch" data-word="paused"></span><b class="lg-word" data-word="paused">paused</b><span class="lg-gloss">Paused. Nothing is counted.</span></li>
     </ul>
 
-    <h3 class="help-h">Scars and mending</h3>
-    <ul class="legend scar-legend">
-      <li><svg class="scar-glyph" viewBox="0 0 40 24" aria-hidden="true"><path class="sg-scar" d="M6 17Q20 7 34 17"/><path class="sg-scar sg-thin" d="M10 13.6l-1.6-3.2M15 11.1l-.9-3.4M20 10.2v-3.6M25 11.1l.9-3.4M30 13.6l1.6-3.2"/></svg><span class="lg-gloss"><b>wicks</b>: head turned</span></li>
-      <li><svg class="scar-glyph" viewBox="0 0 40 24" aria-hidden="true"><path class="sg-scar" d="M6 9Q20 3 34 9"/><path class="sg-scar sg-thin" d="M13 6.6v8M20 6v11M27 6.6v7"/><circle class="sg-dot" cx="13" cy="15.4" r="1.3"/><circle class="sg-dot" cx="20" cy="18.2" r="1.3"/><circle class="sg-dot" cx="27" cy="14.4" r="1.3"/></svg><span class="lg-gloss"><b>drips</b>: looking down</span></li>
-      <li><svg class="scar-glyph" viewBox="0 0 40 24" aria-hidden="true"><path class="sg-scar sg-hair" d="M8 15Q20 8 32 15"/><path class="sg-scar sg-faint" d="M8 13.4Q20 6.4 32 13.4M8 16.6Q20 9.6 32 16.6"/></svg><span class="lg-gloss"><b>hairline</b>: glance</span></li>
-      <li><svg class="scar-glyph" viewBox="0 0 40 24" aria-hidden="true"><circle class="sg-amber" cx="20" cy="12" r="8.5"/></svg><span class="lg-gloss"><b>amber dotted ring</b>: eyes closed</span></li>
-      <li><svg class="scar-glyph" viewBox="0 0 40 24" aria-hidden="true"><circle class="sg-frost" cx="20" cy="12" r="8.5"/></svg><span class="lg-gloss"><b>frost ring</b>: stepped away</span></li>
-      <li><svg class="scar-glyph" viewBox="0 0 40 24" aria-hidden="true"><path class="sg-scar sg-under" d="M6 16Q20 6 34 16"/><path class="sg-gold" d="M6 14.6Q20 4.6 34 14.6"/><path class="sg-gold sg-thin" d="M15 9.1l-1.5-2.4M24 8.9l1.9-2.1"/></svg><span class="lg-gloss"><b>gold seam</b>: mended, after 60 s of focus</span></li>
+    <h3 class="help-h">Stats</h3>
+    <ul class="legend terms">
+      <li><b class="lg-word">Distraction</b><span class="lg-gloss">Looking away, down or at another tab for more than a moment.</span></li>
+      <li><b class="lg-word">Refocus</b><span class="lg-gloss">Coming back to your work after a distraction.</span></li>
+      <li><b class="lg-word">Recovered</b><span class="lg-gloss">A distraction followed by 60 s of steady focus.</span></li>
+      <li><b class="lg-word">Streak</b><span class="lg-gloss">Unbroken focused time. Glances under 5 s don't break it.</span></li>
     </ul>
-    <p class="help-foot">Forgiven drifts (<kbd>F</kbd>, “That was fine”) become a soft mint wash and are never counted.</p>
+    <p class="help-foot">Drifts you mark as fine (<kbd>F</kbd>, “That was fine”) are never counted.</p>
+  </div>
+</dialog>
+
+<!-- ----------------------- About ----------------------- -->
+<dialog id="dlgAbout" class="dlg dlg-about" aria-labelledby="dlgAboutTitle">
+  <div class="dlg-head">
+    <h2 id="dlgAboutTitle" class="dlg-title">About</h2>
+    <button id="btnAboutClose" class="icon-btn" type="button" aria-label="Close about"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="dlg-body about-body">
+    <img class="about-photo" src="assets/me.jpg" width="900" height="686" alt="Michael White smiling at the zoo, with a giraffe behind him">
+    <div class="about-text prose">
+      <p class="about-name">Michael White</p>
+      <p>Hi, I'm Michael. I built Focus Tracker to see how much of my study and work time is actually focused, and to catch myself when I reach for my phone.</p>
+      <p>It's a Pomodoro timer with webcam-based focus tracking that runs entirely in your browser. Nothing you do here is recorded or uploaded.</p>
+      <p><a class="about-link" href="https://github.com/M10W24" target="_blank" rel="noopener">github.com/M10W24</a></p>
+    </div>
   </div>
 </dialog>
 
@@ -880,20 +890,20 @@
     <h2 id="dlgEndTitle" class="dlg-title">End this session?</h2>
   </div>
   <div class="dlg-body">
-    <p id="endBody">It will fruit and join your terrarium.</p>
+    <p id="endBody">It will be saved to your history.</p>
   </div>
   <div class="dlg-actions">
-    <button id="btnEndConfirm" class="btn btn-primary" type="button">End &amp; fruit</button>
+    <button id="btnEndConfirm" class="btn btn-primary" type="button">End session</button>
     <button id="btnEndDiscard" class="btn btn-text btn-scar" type="button">Discard</button>
-    <button id="btnEndCancel" class="btn btn-ghost" type="button">Keep growing</button>
+    <button id="btnEndCancel" class="btn btn-ghost" type="button">Keep going</button>
   </div>
 </dialog>
 
-<!-- ----------------------- Specimen jar ----------------------- -->
+<!-- ----------------------- Session details ----------------------- -->
 <dialog id="dlgJar" class="dlg dlg-jar" aria-labelledby="jarTitle">
   <div class="dlg-head">
-    <h2 id="jarTitle" class="dlg-title jar-title">Specimen</h2>
-    <button id="btnJarClose" class="icon-btn" type="button" aria-label="Close specimen"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+    <h2 id="jarTitle" class="dlg-title jar-title">Session</h2>
+    <button id="btnJarClose" class="icon-btn" type="button" aria-label="Close session details"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
   </div>
   <div class="dlg-body jar-body">
     <div class="jar-stage">
@@ -906,7 +916,7 @@
     </div>
   </div>
   <div class="dlg-actions">
-    <button id="btnJarKeepsake" class="btn btn-primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span class="btn-label">Save keepsake</span></button>
+    <button id="btnJarKeepsake" class="btn btn-primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span class="btn-label">Save image</span></button>
     <button id="btnJarDelete" class="btn btn-danger" type="button"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg><span class="btn-label">Delete</span></button>
   </div>
 </dialog>
@@ -914,7 +924,7 @@
 <!-- ----------------------- Erase ----------------------- -->
 <dialog id="dlgErase" class="dlg dlg-confirm" aria-labelledby="dlgEraseTitle" aria-describedby="dlgEraseBody">
   <div class="dlg-head">
-    <h2 id="dlgEraseTitle" class="dlg-title">Erase every specimen, setting and calibration?</h2>
+    <h2 id="dlgEraseTitle" class="dlg-title">Erase every session, setting and calibration?</h2>
   </div>
   <div class="dlg-body">
     <p id="dlgEraseBody">This can't be undone. Export first if you want a copy.</p>

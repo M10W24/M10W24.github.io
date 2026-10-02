@@ -1,5 +1,5 @@
 /*!
- * Hypha — js/core.js  (SPEC.md §4.1 — copy verbatim; change only together with the spec)
+ * Focus Tracker — js/core.js  (SPEC.md §4.1 — copy verbatim; change only together with the spec)
  * Shared namespace window.FT: event bus, utilities, storage, codecs, state table, palette,
  * timeline analysis, worker-driven heartbeat clock, environment flags.
  * Classic script, loaded FIRST with `defer`. No dependencies. Creates no DOM at load time.
@@ -9,7 +9,7 @@
 
   const FT = (window.FT = window.FT || {});
   FT.VERSION = '1.0.0';
-  FT.APP_NAME = 'Hypha';
+  FT.APP_NAME = 'Focus Tracker';
 
   /* =================================================================== *
    * 1. Event bus — synchronous; a throwing listener never breaks others *
@@ -260,18 +260,18 @@
   const C = (code, state, cause, word, label, held, measured, away, color) =>
     ({ code, state, cause, word, label, held, measured, away, color });
   FT.CODES = {
-    F: C('F', 'focused',     null,     'rooted',    'Focused',        true,  true,  false, 'hypha'),
-    W: C('W', 'drifting',    null,     'wavering',  'Wavering',       true,  true,  false, 'hyphaDim'),
-    K: C('K', 'forgiven',    null,     'rooted',    'Forgiven drift', true,  true,  false, 'hyphaDim'),
-    M: C('M', 'unmeasured',  null,     'growing',   'Timer only',     true,  false, false, 'hyphaDim'),
-    T: C('T', 'away',        'turned', 'shy',       'Head turned',    false, true,  true,  'scar'),
-    G: C('G', 'away',        'glance', 'shy',       'Glance',         false, true,  true,  'scar'),
-    D: C('D', 'away',        'down',   'sinking',   'Looking down',   false, true,  true,  'scar'),
-    U: C('U', 'away',        'up',     'shy',       'Looking up',     false, true,  true,  'scar'),
-    X: C('X', 'away',        'tab',    'elsewhere', 'Other tab',      false, true,  true,  'scar'),
-    E: C('E', 'eyes-closed', 'eyes',   'asleep',    'Eyes closed',    false, true,  false, 'amber'),
-    A: C('A', 'absent',      'absent', 'dormant',   'Stepped away',   false, false, false, 'frost'),
-    N: C('N', 'unseen',      null,     'unseen',    'Not observed',   false, false, false, 'unseen'),
+    F: C('F', 'focused',     null,     'focused',      'Focused',        true,  true,  false, 'hypha'),
+    W: C('W', 'drifting',    null,     'drifting',     'Drifting',       true,  true,  false, 'hyphaDim'),
+    K: C('K', 'forgiven',    null,     'focused',      'Forgiven drift', true,  true,  false, 'hyphaDim'),
+    M: C('M', 'unmeasured',  null,     'timer only',   'Timer only',     true,  false, false, 'hyphaDim'),
+    T: C('T', 'away',        'turned', 'looking away', 'Head turned',    false, true,  true,  'scar'),
+    G: C('G', 'away',        'glance', 'looking away', 'Glance',         false, true,  true,  'scar'),
+    D: C('D', 'away',        'down',   'looking down', 'Looking down',   false, true,  true,  'scar'),
+    U: C('U', 'away',        'up',     'looking away', 'Looking up',     false, true,  true,  'scar'),
+    X: C('X', 'away',        'tab',    'other tab',    'Other tab',      false, true,  true,  'scar'),
+    E: C('E', 'eyes-closed', 'eyes',   'eyes closed',  'Eyes closed',    false, true,  false, 'amber'),
+    A: C('A', 'absent',      'absent', 'away',         'Stepped away',   false, false, false, 'frost'),
+    N: C('N', 'unseen',      null,     'not visible',  'Not observed',   false, false, false, 'unseen'),
   };
   FT.codeFor = (state, cause) => {
     switch (state) {
@@ -293,7 +293,16 @@
     up: 'Looking up', tab: 'Other tabs', eyes: 'Eyes closed',
   };
   /** Words shown for non-attention phases. */
-  FT.PHASE_WORDS = { idle: 'dormant', calibrating: 'germinating', paused: 'paused', break: 'resting', complete: 'fruiting' };
+  FT.PHASE_WORDS = { idle: 'ready', calibrating: 'calibrating', paused: 'paused', break: 'break', complete: 'done' };
+
+  /**
+   * Display title for a session: its intention, or "Focus session". Older records carry
+   * generated names; they are ignored so every session reads the same way.
+   */
+  FT.sessionTitle = (r) => {
+    const t = r && typeof r.intention === 'string' ? r.intention.trim() : '';
+    return t || 'Focus session';
+  };
 
   /** Canonical colours for canvas code (CSS mirrors these as --tokens). */
   FT.PALETTE = {

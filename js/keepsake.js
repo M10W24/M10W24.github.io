@@ -1,22 +1,22 @@
 /*!
- * Hypha — js/keepsake.js  (FT.Keepsake)
- * SPEC §4.7 (API) and §8 (composition). Renders a 1080×1350 specimen poster on an offscreen
- * canvas from numbers only (seed + timeline): it never contains camera pixels.
+ * Focus Tracker — js/keepsake.js  (FT.Keepsake)
+ * SPEC §4.7 (API) and §8 (composition). Renders a 1080×1350 session summary image on an
+ * offscreen canvas from numbers only (stats + timeline): it never contains camera pixels.
  *
- * Depends on core (FT.util, FT.codec, FT.analyze, FT.PALETTE) and, guarded, on
- * FT.Visual.drawSpecimen. Does not depend on FT.Session (it keeps its own copy of the label rule).
+ * Depends on core (FT.util, FT.codec, FT.analyze, FT.PALETTE, FT.sessionTitle).
+ * Does not depend on FT.Session (it keeps its own copy of the label rule).
  */
 (function () {
   'use strict';
   const FT = window.FT, U = FT.util;
   const P = FT.PALETTE;
-  const LOG = '[Hypha:keepsake]';
+  const LOG = '[Focus:keepsake]';
 
   /* ------------------------------------------------------------------ *
    * Constants (§8)                                                      *
    * ------------------------------------------------------------------ */
   const W0 = 1080, H0 = 1350;          // design size; other sizes scale uniformly
-  const CX = 540, CY = 590;            // dish centre
+  const CX = 540, CY = 590;            // ring centre
   const TAU = Math.PI * 2;
   const TOP = -Math.PI / 2;            // 12 o'clock
   const DEG = Math.PI / 180;
@@ -25,12 +25,11 @@
   const DOT = ' ' + String.fromCharCode(0x00B7) + ' '; // " middle-dot "
   const EN = String.fromCharCode(0x2013);              // en dash (time ranges)
 
-  const DISPLAY = '"Fraunces", "Iowan Old Style", Georgia, serif';
   const UI = '"Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
   const MONO = '"IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace';
 
   const FONT_FACES = [
-    'italic 300 60px Fraunces',
+    '600 60px "Instrument Sans"',
     '500 20px "IBM Plex Mono"',
     '400 22px "IBM Plex Mono"',
     '600 14px "Instrument Sans"',
@@ -52,9 +51,9 @@
    * ------------------------------------------------------------------ */
   const isNum = (v) => typeof v === 'number' && isFinite(v);
   const col = (name, a) => U.rgba(U.hexToRgb(P[name] || name), a == null ? 1 : a);
-  const pad3 = (n) => {
-    const v = +n;
-    return String(isNum(v) ? Math.max(0, Math.floor(v)) : 0).padStart(3, '0');
+  const sessionNo = (record) => {
+    const v = +(record && record.no);
+    return String(isNum(v) ? Math.max(0, Math.floor(v)) : 0);
   };
   const dur = (ms) => (isNum(ms) ? U.fmtDuration(ms) : DASH);
   const pct = (x) => (isNum(x) ? U.fmtPercent(x) : DASH);
@@ -69,10 +68,6 @@
   function timelineOf(record) {
     const tl = record && record.timeline;
     return tl && typeof tl.s === 'string' ? tl : null;
-  }
-
-  function seedOf(record) {
-    return isNum(record.seed) ? record.seed >>> 0 : U.hashString(String(record.id || 'hypha'));
   }
 
   /**
@@ -120,16 +115,16 @@
 
   /**
    * The label rule (§2.4.8) — Keepsake's own copy (it must not depend on Session).
-   * "No. 047 · 52 min · 91% held · 3 scars · 3 mended", or "… · timer only"; prefix "DEMO · " for sim.
+   * "#47 · 52 min · 91% focused · 3 distractions · 3 recovered", or "… · timer only"; prefix "DEMO · " for sim.
    */
   function labelParts(record, m) {
     m = m || metricsOf(record);
-    const parts = ['No. ' + pad3(record.no), Math.round(m.activeMs / 60000) + ' min'];
+    const parts = ['#' + sessionNo(record), Math.round(m.activeMs / 60000) + ' min'];
     if (m.measured) {
-      parts.push(U.fmtPercent(m.focusPct) + ' held');
+      parts.push(U.fmtPercent(m.focusPct) + ' focused');
       const d = Math.max(0, Math.round(m.distractions));
-      parts.push(d === 0 ? 'no scars' : d === 1 ? '1 scar' : d + ' scars');
-      if (m.mended > 0) parts.push(Math.round(m.mended) + ' mended');
+      parts.push(d === 0 ? 'no distractions' : d === 1 ? '1 distraction' : d + ' distractions');
+      if (m.mended > 0) parts.push(Math.round(m.mended) + ' recovered');
     } else {
       parts.push('timer only');
     }
@@ -212,9 +207,9 @@
   /* ------------------------------------------------------------------ *
    * Composition (§8, drawn in design space 1080×1350)                   *
    * ------------------------------------------------------------------ */
-  function drawBackground(ctx, seed, view) {
+  function drawBackground(ctx, view) {
     ctx.save();
-    // Glow behind the dish.
+    // Glow behind the ring.
     let gr = ctx.createRadialGradient(CX, CY, 0, CX, CY, 620);
     gr.addColorStop(0, 'rgba(124,245,208,0.07)');
     gr.addColorStop(0.5, 'rgba(124,245,208,0.03)');
@@ -235,13 +230,6 @@
     gr.addColorStop(1, 'rgba(0,0,0,0.6)');
     ctx.fillStyle = gr;
     ctx.fillRect(view.x, view.y, view.w, view.h);
-
-    // Grain: 3500 seeded 1 px dots.
-    const rnd = U.rng(seed);
-    ctx.fillStyle = 'rgba(207,230,223,0.035)';
-    ctx.beginPath();
-    for (let i = 0; i < 3500; i++) ctx.rect(Math.floor(rnd() * W0), Math.floor(rnd() * H0), 1, 1);
-    ctx.fill();
     ctx.restore();
   }
 
@@ -250,9 +238,9 @@
     ctx.textBaseline = 'alphabetic';
     ctx.font = '500 20px ' + MONO;
     ctx.fillStyle = P.muted;
-    spaced(ctx, 'HYPHA' + DOT + 'SPECIMEN', 80, 92, 4, 'left');
+    spaced(ctx, 'FOCUS TRACKER' + DOT + 'SESSION', 80, 92, 4, 'left');
 
-    const no = 'No. ' + pad3(record.no);
+    const no = '#' + sessionNo(record);
     ctx.textAlign = 'right';
     ctx.fillStyle = P.text;
     ctx.fillText(no, 1000, 92);
@@ -267,58 +255,23 @@
     ctx.restore();
   }
 
-  /** Fallback when FT.Visual is unavailable: a lone glowing spore. */
-  function drawSpore(ctx) {
-    const gr = ctx.createRadialGradient(CX, CY, 0, CX, CY, 80);
-    gr.addColorStop(0, 'rgba(239,255,248,0.85)');
-    gr.addColorStop(0.12, 'rgba(124,245,208,0.5)');
-    gr.addColorStop(0.45, 'rgba(124,245,208,0.1)');
-    gr.addColorStop(1, 'rgba(124,245,208,0)');
-    ctx.fillStyle = gr;
-    ctx.beginPath(); ctx.arc(CX, CY, 80, 0, TAU); ctx.fill();
-    ctx.fillStyle = P.core;
-    ctx.beginPath(); ctx.arc(CX, CY, 12, 0, TAU); ctx.fill();
-  }
-
-  function drawDish(ctx, record) {
+  /** The middle of the ring: a plain disk with the session's focus % (or "Timer" when unmeasured). */
+  function drawCentre(ctx, m) {
     ctx.save();
-    // Glass disk.
-    const gr = ctx.createRadialGradient(CX, CY, 0, CX, CY, 392);
-    gr.addColorStop(0, '#0E1D20');
-    gr.addColorStop(1, '#0A1517');
-    ctx.fillStyle = gr;
+    ctx.fillStyle = P.dish;
     ctx.beginPath(); ctx.arc(CX, CY, 392, 0, TAU); ctx.fill();
-    // Rim.
     ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(207,230,223,0.14)';
+    ctx.strokeStyle = 'rgba(207,230,223,0.1)';
     ctx.stroke();
-    // Glint (−150° → −100°), with a slightly brighter core.
-    ctx.lineCap = 'round';
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'rgba(239,255,248,0.25)';
-    ctx.beginPath(); ctx.arc(CX, CY, 392, -150 * DEG, -100 * DEG); ctx.stroke();
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(239,255,248,0.18)';
-    ctx.beginPath(); ctx.arc(CX, CY, 392, -138 * DEG, -114 * DEG); ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = m.measured ? P.text : P.muted;
+    ctx.font = '600 190px ' + UI;
+    ctx.fillText(m.measured ? pct(m.focusPct) : 'Timer', CX, CY + 50);
+    ctx.font = '600 22px ' + UI;
+    ctx.fillStyle = P.muted;
+    spaced(ctx, m.measured ? 'FOCUSED' : 'TIMER ONLY', CX, CY + 120, 4, 'center');
     ctx.restore();
-
-    // The specimen itself, regrown deterministically from the record.
-    let drew = false;
-    if (FT.Visual && FT.Visual.drawSpecimen) {
-      ctx.save();
-      try {
-        FT.Visual.drawSpecimen(ctx, record, CX, CY, 360, { quality: 'full', fruit: true, background: false });
-        drew = true;
-      } catch (e) {
-        console.warn(LOG, 'drawSpecimen failed; drawing a spore instead.', e);
-      }
-      ctx.restore();
-    }
-    if (!drew) {
-      ctx.save();
-      drawSpore(ctx);
-      ctx.restore();
-    }
   }
 
   /** The session as a radial barcode: 360° = the whole session, clockwise from 12 o'clock. */
@@ -356,7 +309,7 @@
       }
     };
 
-    // Addition (not in §8): a faint luminous halo under held time, so focus reads as light.
+    // Addition (not in §8): a faint halo under focused time.
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineWidth = 30;
     for (const code of ['F', 'W', 'K', 'M']) {
@@ -394,7 +347,7 @@
     }
 
     // Addition (mirrors the summary strip, §2.4.8 item 4): a gold dot inside the ring for every
-    // mended episode, centred on the scar it healed.
+    // recovered distraction, centred on it.
     let an = null;
     try { an = m && m.analysis ? m.analysis() : FT.analyze(tl); } catch (e) { an = null; }
     if (an && an.episodes && an.mended > 0) {
@@ -439,16 +392,10 @@
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
-    const name = String(record.name || 'Hypha');
+    const name = FT.sessionTitle(record);
     ctx.fillStyle = P.text;
-    fitFont(ctx, name, 920, (px) => 'italic 300 ' + px + 'px ' + DISPLAY, 60, 34);
-    ctx.fillText(name, CX, 1080);
-    if (record.variety) {
-      const variety = String(record.variety);
-      ctx.fillStyle = P.muted;
-      fitFont(ctx, variety, 920, (px) => 'italic 300 ' + px + 'px ' + DISPLAY, 30, 18);
-      ctx.fillText(variety, CX, 1128);
-    }
+    fitFont(ctx, name, 920, (px) => '600 ' + px + 'px ' + UI, 56, 32);
+    ctx.fillText(name, CX, 1100);
     ctx.restore();
   }
 
@@ -478,9 +425,9 @@
   function drawStats(ctx, m) {
     const timerOnly = !m.measured;
     const cols = [
-      { x: 180, cap: 'HELD', val: dur(m.heldMs), color: P.hypha },
-      { x: 420, cap: 'LONGEST ROOT', val: dur(m.longestStreakMs), color: P.hypha },
-      { x: 660, cap: 'RETURNS', val: !timerOnly && isNum(m.returns) ? String(Math.round(m.returns)) : DASH, color: P.gold },
+      { x: 180, cap: 'FOCUSED', val: dur(m.heldMs), color: P.hypha },
+      { x: 420, cap: 'LONGEST STREAK', val: dur(m.longestStreakMs), color: P.hypha },
+      { x: 660, cap: 'REFOCUSES', val: !timerOnly && isNum(m.returns) ? String(Math.round(m.returns)) : DASH, color: P.gold },
       { x: 900, cap: 'PEAK DEPTH', val: timerOnly ? DASH : pct(m.peakDepth), color: P.hypha },
     ];
     ctx.save();
@@ -510,7 +457,7 @@
     }
     ctx.textAlign = 'right';
     ctx.font = '400 16px ' + UI;
-    ctx.fillText('grown on-device' + DOT + 'no images recorded', 1000, 1322);
+    ctx.fillText('tracked on-device' + DOT + 'no images recorded', 1000, 1322);
     ctx.restore();
   }
 
@@ -519,7 +466,7 @@
    * ------------------------------------------------------------------ */
   let fontsSettled = false;
 
-  /** Resolves once the §8 faces have loaded, or after 1500 ms. Never rejects. */
+  /** Resolves once the image's fonts have loaded, or after 1500 ms. Never rejects. */
   function ready() {
     if (fontsSettled) return Promise.resolve();
     const fonts = document.fonts;
@@ -545,7 +492,7 @@
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
-    if (!ctx) throw mkErr('NoCanvas', 'This browser cannot draw the keepsake.');
+    if (!ctx) throw mkErr('NoCanvas', 'This browser cannot draw the session image.');
 
     const s = Math.min(width / W0, height / H0);
     const ox = (width - W0 * s) / 2, oy = (height - H0 * s) / 2;
@@ -556,9 +503,9 @@
     const view = { x: -ox / s, y: -oy / s, w: width / s, h: height / s };
 
     const m = metricsOf(record);
-    drawBackground(ctx, seedOf(record), view);
+    drawBackground(ctx, view);
     drawHeader(ctx, record);
-    drawDish(ctx, record);
+    drawCentre(ctx, m);
     drawRing(ctx, record, m);
     drawTitle(ctx, record);
     drawLabel(ctx, record, m);
@@ -584,7 +531,7 @@
         if (typeof canvas.toBlob === 'function') {
           canvas.toBlob((b) => {
             if (b) resolve(b);
-            else reject(mkErr('EncodeFailed', 'The keepsake image could not be encoded.'));
+            else reject(mkErr('EncodeFailed', 'The session image could not be encoded.'));
           }, 'image/png');
           return;
         }
@@ -595,11 +542,11 @@
     });
   }
 
-  /** e.g. "hypha-no047-2026-09-28.png" (local day of startedAt). */
+  /** e.g. "focus-session-47-2026-09-28.png" (local day of startedAt). */
   function filename(record) {
     record = record || {};
     const day = U.dayKey(isNum(record.startedAt) ? record.startedAt : Date.now());
-    return 'hypha-no' + pad3(record.no) + '-' + day + '.png';
+    return 'focus-session-' + sessionNo(record) + '-' + day + '.png';
   }
 
   function release(canvas) {
@@ -641,7 +588,7 @@
       try { blob = await toBlob(canvas); }
       finally { release(canvas); }
       const file = new File([blob], filename(record), { type: 'image/png' });
-      const data = { files: [file], title: String(record.name || 'Hypha'), text: labelFor(record) };
+      const data = { files: [file], title: FT.sessionTitle(record), text: labelFor(record) };
       if (!navigator.canShare(data)) return false;
       await navigator.share(data);
       return true;

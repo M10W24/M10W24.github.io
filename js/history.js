@@ -1,6 +1,6 @@
 /*!
- * Hypha — js/history.js  (FT.History — SPEC-ADDENDUM §C; SPEC §2.4.8, §2.4.9, §2.4.10, §4.4.7, §4.4.10, §4.7)
- * The summary sheet, the terrarium (history screen), the jar detail dialog, the erase dialog,
+ * Focus Tracker — js/history.js  (FT.History — SPEC-ADDENDUM §C; SPEC §2.4.8, §2.4.9, §2.4.10, §4.4.7, §4.4.10, §4.7)
+ * The summary sheet, the history screen, the session detail dialog, the erase dialog,
  * and the data export / import UI.
  * Classic script, loaded with `defer` after keepsake.js and before app.js. Nothing runs at load
  * time: FT.App.init() calls FT.History.init() in boot step 6. Every cross-module call
@@ -15,7 +15,7 @@
    * Constants                                                            *
    * =================================================================== */
   const $ = (id) => document.getElementById(id);
-  const LOG = '[Hypha:history]';
+  const LOG = '[Focus:history]';
   const TAU = Math.PI * 2;
   const P = FT.PALETTE;
   const SVGNS = 'http://www.w3.org/2000/svg';
@@ -138,7 +138,6 @@
   }
   const r1 = (v) => Math.round(v * 10) / 10;
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
-  function pad3(n) { return String(Math.max(0, Math.floor(+n || 0))).padStart(3, '0'); }
   function num(v, fallback) { v = +v; return isFinite(v) ? v : (fallback === undefined ? 0 : fallback); }
   function dprCap(cap) { return Math.max(1, Math.min(cap, window.devicePixelRatio || 1)); }
   function sum(arr) { let s = 0; for (let i = 0; i < arr.length; i++) s += arr[i]; return s; }
@@ -273,13 +272,13 @@
   }
   function localLabel(r) {
     const st = statsOf(r);
-    const parts = ['No. ' + pad3(r.no), Math.round(num(r.activeMs) / 60000) + ' min'];
+    const parts = ['#' + Math.max(0, Math.floor(num(r.no))), Math.round(num(r.activeMs) / 60000) + ' min'];
     if (isMeasured(r)) {
-      parts.push(Math.round(st.focusPct * 100) + '% held');
+      parts.push(Math.round(st.focusPct * 100) + '% focused');
       const m = Math.max(0, num(st.distractions));
-      parts.push(m === 0 ? 'no scars' : m === 1 ? '1 scar' : m + ' scars');
+      parts.push(m === 0 ? 'no distractions' : m === 1 ? '1 distraction' : m + ' distractions');
       const mended = Math.max(0, num(st.mended));
-      if (mended > 0) parts.push(mended + ' mended');
+      if (mended > 0) parts.push(mended + ' recovered');
     } else {
       parts.push('timer only');
     }
@@ -295,20 +294,20 @@
     const measured = isMeasured(rec);
     const returns = Math.max(0, num(st.returns));
     const med = st.medianRecoveryMs;
-    const retWord = returns === 1 ? 'return' : 'returns';
+    const retWord = returns === 1 ? 'refocus' : 'refocuses';
     return [
-      { id: 'sumHeld', capId: 'sumHeldOf', v: U.fmtDuration(num(st.heldMs)), c: 'held of ' + U.fmtDuration(num(rec.activeMs)) },
+      { id: 'sumHeld', capId: 'sumHeldOf', v: U.fmtDuration(num(st.heldMs)), c: 'focused of ' + U.fmtDuration(num(rec.activeMs)) },
       { id: 'sumPct', v: measured ? U.fmtPercent(st.focusPct) : DASH, c: 'focus' },
-      // SPEC-GAP: "longest root" stays visible for timer-only sessions (timer time counts as held),
-      // matching the keepsake stats row, which dashes only RETURNS and PEAK DEPTH.
-      { id: 'sumLongest', v: U.fmtDuration(num(st.longestStreakMs)), c: 'longest root' },
+      // SPEC-GAP: "longest streak" stays visible for timer-only sessions (timer time counts as focused),
+      // matching the saved image's stats row, which dashes only REFOCUSES and PEAK DEPTH.
+      { id: 'sumLongest', v: U.fmtDuration(num(st.longestStreakMs)), c: 'longest streak' },
       {
         id: 'sumReturns', capId: 'sumRecovery', gold: true,
         v: measured ? String(returns) : DASH,
-        c: measured && returns > 0 && med != null && isFinite(med) ? retWord + ' · median ' + U.fmtDuration(med) : 'returns',
+        c: measured && returns > 0 && med != null && isFinite(med) ? retWord + ' · median ' + U.fmtDuration(med) : 'refocuses',
       },
       { id: 'sumDepth', v: measured ? U.fmtPercent(num(st.peakDepth)) : DASH, c: 'peak depth' },
-      { id: 'sumRoot', v: measured && st.timeToRootMs != null && isFinite(st.timeToRootMs) ? U.fmtDuration(st.timeToRootMs) : DASH, c: 'time to root' },
+      { id: 'sumRoot', v: measured && st.timeToRootMs != null && isFinite(st.timeToRootMs) ? U.fmtDuration(st.timeToRootMs) : DASH, c: 'time to focus' },
       { id: 'sumBlink', v: measured && st.blinkRate != null && isFinite(st.blinkRate) ? Math.round(st.blinkRate) + '/min' : DASH, c: 'blinks' },
       { id: 'sumDrowsy', v: measured ? String(Math.max(0, num(st.drowsyFlags))) : DASH, c: 'drowsy moments' },
     ];
@@ -334,9 +333,9 @@
     const analysis = record.timeline ? FT.analyze(record.timeline) : null;
 
     // 1. Label (typed), 2. name + variety
-    guard('specimen label', () => typeLabel($('specimenLabel'), labelFor(record)));
-    setText('specimenName', record.name || 'Hypha');
-    setText('specimenVar', record.variety || '');
+    guard('session label', () => typeLabel($('specimenLabel'), labelFor(record)));
+    setText('specimenName', FT.sessionTitle(record));
+    setText('specimenVar', '');
 
     // 3. Tiles
     guard('summary tiles', () => {
@@ -351,7 +350,7 @@
         // SPEC-GAP: short sessions never reach the summary in the normal flow (app.js toasts and
         // returns to Setup); if one does, the note explains why it won't be kept.
         if (short) msg = "Too short to keep. Sessions under 30 seconds aren't saved.";
-        else if (num(st.unmeasuredMs) >= 1000) msg = "Timer-only time isn't measured; it counts as held.";
+        else if (num(st.unmeasuredMs) >= 1000) msg = "Timer-only time isn't measured; it counts as focused.";
         // SPEC-GAP: a camera session with under 30 measured seconds gets its own honest note.
         else if (!measured) msg = 'Too little was observed to measure focus. Unseen time is never counted against you.';
         if (msg) note.textContent = msg;
@@ -635,7 +634,7 @@
       else if (c === 'A') absent++;
       else unseen++;
     }
-    const parts = [U.fmtDuration(held * 1000) + ' held'];
+    const parts = [U.fmtDuration(held * 1000) + ' focused'];
     if (away) parts.push(U.fmtDuration(away * 1000) + ' drifting');
     if (eyes) parts.push(U.fmtDuration(eyes * 1000) + ' with eyes closed');
     if (absent) parts.push(U.fmtDuration(absent * 1000) + ' away from the desk');
@@ -644,7 +643,7 @@
     if (gaps) parts.push(plural(gaps, 'pause or break', 'pauses or breaks'));
     const eps = Array.isArray(record.episodes) ? record.episodes : [];
     const mended = eps.filter((e) => e && e.mended).length;
-    if (mended) parts.push(plural(mended, 'mended scar'));
+    if (mended) parts.push(plural(mended, 'recovered distraction'));
     return 'Session timeline, ' + U.fmtDuration(n * 1000) + ': ' + parts.join(', ') + '.';
   }
 
@@ -680,7 +679,7 @@
     if (dlg && dlg.open && jarRecord) return keepsake(jarRecord, $('btnJarKeepsake'));
     const scr = screenName();
     if (currentRecord && (!scr || scr === 'summary')) return keepsake(currentRecord, $('btnKeepsake'));
-    toast('Open a specimen to save its keepsake.');
+    toast('Open a session to save its image.');
     return Promise.resolve(false);
   }
 
@@ -688,7 +687,7 @@
     if (!record || keepsakeBusy) return false;
     const K = FT.Keepsake;
     if (!K || typeof K.download !== 'function') {
-      toast("Keepsakes can't be made right now. Try reloading Hypha.");
+      toast("Images can't be made right now. Try reloading the page.");
       return false;
     }
     keepsakeBusy = true;
@@ -697,11 +696,11 @@
       await K.download(record);
       let name = '';
       try { name = typeof K.filename === 'function' ? String(K.filename(record) || '') : ''; } catch (err) { name = ''; }
-      toast(name ? 'Keepsake saved: ' + name : 'Keepsake saved.');
+      toast(name ? 'Image saved: ' + name : 'Image saved.');
       return true;
     } catch (err) {
       console.error(LOG, 'keepsake failed:', err);
-      toast("Couldn't save the keepsake. Please try again.", { timeout: 8000 });
+      toast("Couldn't save the image. Please try again.", { timeout: 8000 });
       return false;
     } finally {
       keepsakeBusy = false;
@@ -791,10 +790,10 @@
         };
       }
       const n = Math.max(0, num(t.sessions));
-      if (!all.length) totalsEl.textContent = 'No specimens yet.';
-      else if (!n) totalsEl.textContent = 'Only demo specimens so far. Grow a real one to start your record.';
+      if (!all.length) totalsEl.textContent = 'No sessions yet.';
+      else if (!n) totalsEl.textContent = 'Only demo sessions so far. Do a real one to start your record.';
       else {
-        const parts = [plural(n, 'specimen'), U.fmtDuration(num(t.heldMs)) + ' held'];
+        const parts = [plural(n, 'session'), U.fmtDuration(num(t.heldMs)) + ' focused'];
         let avg = t.avgFocusPct;
         if (avg != null && isFinite(avg)) {
           if (avg > 1.0001) avg /= 100; // tolerate a percentage instead of a fraction
@@ -816,7 +815,7 @@
         note.style.cssText = 'opacity:.72;font-weight:400';
         chip.appendChild(note);
         const todayMet = !!(agg.today && agg.today.goalMet);
-        chip.title = 'A day counts toward your streak at ' + goal + ' minutes held.' +
+        chip.title = 'A day counts toward your streak at ' + goal + ' minutes focused.' +
           (todayMet ? ' Today already counts.' : '');
       }
     }
@@ -973,7 +972,7 @@
       const shelf = mk('section', 'shelf');
       const head = mk('h3', 'shelf-head', weekLabel(key));
       const heldReal = sum(items.filter((s) => !isDemo(s)).map((s) => num(s.heldMs)));
-      const extra = mk('span', null, ' · ' + plural(items.length, 'jar') + (heldReal > 0 ? ' · ' + U.fmtDuration(heldReal) + ' held' : ''));
+      const extra = mk('span', null, ' · ' + plural(items.length, 'session') + (heldReal > 0 ? ' · ' + U.fmtDuration(heldReal) + ' focused' : ''));
       extra.style.cssText = 'font-weight:400;opacity:.7';
       head.appendChild(extra);
       const row = mk('div', 'shelf-row');
@@ -1006,7 +1005,7 @@
     btn.append(cv, mk('span', 'jar-date', dateText), mk('span', 'jar-min', minText));
     const demo = isDemo(s);
     if (demo) btn.appendChild(mk('span', 'jar-tag', 'demo'));
-    const name = (s.name || 'Specimen') + (s.variety ? ' ' + s.variety : '');
+    const name = FT.sessionTitle(s);
     // The accessible name starts with the visible text (WCAG 2.5.3), then the full story.
     btn.setAttribute('aria-label', dateText + ', ' + minText + (demo ? ', demo' : '') + ': ' + name + '. ' +
       labelFor(s) + '. ' + fmtDate(FMT.fullDay(), new Date(num(s.startedAt, Date.now()))) + '.');
@@ -1098,7 +1097,7 @@
     let img = thumbCache.get(key);
     if (img) cacheTouch(key, img);
     else {
-      if (!FT.Visual || typeof FT.Visual.drawSpecimen !== 'function') return;  // the spore placeholder stays
+      if (!FT.Visual || typeof FT.Visual.drawSpecimen !== 'function') return;  // the placeholder ring stays
       let rec = null;
       try { rec = FT.Session && typeof FT.Session.load === 'function' ? FT.Session.load(job.id) : null; }
       catch (err) { warn('Session.load failed for a jar', err); }
@@ -1132,7 +1131,7 @@
     if (canvas.height !== img.height) canvas.height = img.height;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    canvas.classList.add('is-drawn');    // our pixels replace the CSS placeholder spore
+    canvas.classList.add('is-drawn');    // our pixels replace the CSS placeholder ring
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0);
@@ -1141,17 +1140,14 @@
     }
   }
 
-  /** A glowing spore (placeholder art); `alpha` scales the whole glow. */
-  function drawSpore(ctx, x, y, r, alpha) {
+  /** An empty ring track (placeholder art); `alpha` scales it. */
+  function drawTrack(ctx, x, y, r, alpha) {
     const a = alpha == null ? 1 : alpha;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, 'rgba(239,255,248,' + (0.95 * a).toFixed(3) + ')');
-    g.addColorStop(0.28, 'rgba(124,245,208,' + (0.6 * a).toFixed(3) + ')');
-    g.addColorStop(1, 'rgba(124,245,208,0)');
-    ctx.fillStyle = g;
+    ctx.lineWidth = Math.max(2, r * 0.18);
+    ctx.strokeStyle = 'rgba(207,230,223,' + (0.1 * a).toFixed(3) + ')';
     ctx.beginPath();
     ctx.arc(x, y, r, 0, TAU);
-    ctx.fill();
+    ctx.stroke();
   }
   function prepThumbCtx(canvas, dpr) {
     const px = Math.round(JAR_CSS * dpr);
@@ -1159,34 +1155,20 @@
     if (canvas.height !== px) canvas.height = px;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
-    canvas.classList.add('is-drawn');    // the painted placeholder/missing art replaces the CSS spore
+    canvas.classList.add('is-drawn');    // the painted placeholder/missing art replaces the CSS ring
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, px, px);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     return ctx;
   }
-  /** Placeholder: a spore with five faint seeded hyphae, until the real specimen is drawn. */
+  /** Placeholder: an empty ring, until the real session ring is drawn. */
   function drawPlaceholderThumb(canvas, id, dpr) {
     const ctx = prepThumbCtx(canvas, dpr);
     if (!ctx) return;
     const c = JAR_CSS / 2;
-    const rnd = U.rng(U.hashString(String(id)));
-    const a0 = rnd() * TAU;
-    ctx.lineCap = 'round';
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(124,245,208,0.28)';
-    for (let k = 0; k < 5; k++) {
-      const a = a0 + (k * TAU) / 5 + (rnd() - 0.5) * 0.5;
-      const len = 7 + rnd() * 6, bend = (rnd() - 0.5) * 0.9;
-      ctx.beginPath();
-      ctx.moveTo(c + Math.cos(a) * 3, c + Math.sin(a) * 3);
-      ctx.quadraticCurveTo(c + Math.cos(a + bend) * len * 0.6, c + Math.sin(a + bend) * len * 0.6,
-        c + Math.cos(a) * len, c + Math.sin(a) * len);
-      ctx.stroke();
-    }
-    drawSpore(ctx, c, c, 8, 1);
+    drawTrack(ctx, c, c, 25, 1);
   }
-  /** A record that can't be loaded: a dim spore inside a frost dashed ring. */
+  /** A record that can't be loaded: a frost dashed ring. */
   function drawMissingThumb(canvas, dpr) {
     const ctx = prepThumbCtx(canvas, dpr);
     if (!ctx) return;
@@ -1198,7 +1180,6 @@
     ctx.arc(c, c, 24, 0, TAU);
     ctx.stroke();
     ctx.setLineDash([]);
-    drawSpore(ctx, c, c, 6, 0.45);
   }
 
   /* ----- 3. When you focus: 7×24 heatmap + best hours ----- */
@@ -1229,7 +1210,7 @@
     if (bestEl) {
       bestEl.textContent = hasBest
         ? 'Your best hours: ' + hourRange(bestStart, bestEnd)
-        : 'Grow a few more specimens to see your best hours.';
+        : 'Do a few more sessions to see your best hours.';
     }
     const host = $('chartHeat');
     if (!host) return;
@@ -1240,8 +1221,8 @@
         if (heat[w][hr] > max) { max = heat[w][hr]; top = { w: w, hr: hr }; }
       }
     }
-    const aria = 'Held focus by weekday and hour over the last 12 weeks. ' + (top
-      ? 'Strongest: ' + weekdayName(top.w) + ' ' + hourLabel(top.hr) + ', ' + U.fmtDuration(max) + ' held.'
+    const aria = 'Focused time by weekday and hour over the last 12 weeks. ' + (top
+      ? 'Strongest: ' + weekdayName(top.w) + ' ' + hourLabel(top.hr) + ', ' + U.fmtDuration(max) + ' focused.'
       : 'Nothing recorded yet.');
 
     const W = measure(host, 560);
@@ -1268,7 +1249,7 @@
             ? 'fill:' + tok('hypha') + ';fill-opacity:' + (0.14 + 0.86 * (v / max)).toFixed(3)
             : 'fill:' + tok('line') + ';fill-opacity:.45',
         }, svg);
-        svgTitle(rect, weekdayName(w) + ' ' + hourLabel(hr) + ': ' + (v > 0 ? U.fmtDuration(v) + ' held' : 'nothing yet'));
+        svgTitle(rect, weekdayName(w) + ' ' + hourLabel(hr) + ': ' + (v > 0 ? U.fmtDuration(v) + ' focused' : 'nothing yet'));
       }
     }
     for (const hr of [0, 6, 12, 18]) {
@@ -1530,7 +1511,7 @@
     try { rec = FT.Session && typeof FT.Session.load === 'function' ? FT.Session.load(id) : null; }
     catch (err) { warn('Session.load failed', err); }
     if (!rec) {
-      toast("That specimen couldn't be found. It may have been removed.");
+      toast("That session couldn't be found. It may have been removed.");
       return false;
     }
     const dlg = $('dlgJar');
@@ -1551,12 +1532,7 @@
   function fillJar(rec) {
     const title = $('jarTitle');
     if (title) {
-      title.textContent = rec.name || 'Hypha';
-      if (rec.variety) {
-        const v = mk('span', 'jar-var', rec.variety);
-        v.style.cssText = 'display:block;font-size:.6em;opacity:.72;margin-top:.2em';
-        title.append(' ', v);   // the space keeps "Hypha lucida var. …" apart for assistive tech
-      }
+      title.textContent = FT.sessionTitle(rec);
     }
     let meta = labelFor(rec) + ' · ' + dateRangeText(rec);
     if (rec.rating >= 1 && rec.rating <= 5) meta += ' · felt ' + ratingWord(rec.rating).toLowerCase();
@@ -1594,10 +1570,10 @@
     ctx.lineWidth = 1.5;
     ctx.strokeStyle = 'rgba(207,230,223,0.12)';
     ctx.stroke();
-    drawSpore(ctx, c, c, Math.max(8, R * 0.12), 1);
+    drawTrack(ctx, c, c, R * 0.84, 1);
   }
 
-  /** #jarCanvas: 280×280 CSS at DPR; placeholder now, the full specimen on the next frame. */
+  /** #jarCanvas: 280×280 CSS at DPR; placeholder now, the session ring on the next frame. */
   function drawJarCanvas(rec) {
     const cv = $('jarCanvas');
     if (!cv || typeof cv.getContext !== 'function') return;
@@ -1617,8 +1593,7 @@
     drawDishPlaceholder(ctx, c, R);
     cv.removeAttribute('aria-hidden');       // the markup hides it; the label below must reach AT (§10.5)
     cv.setAttribute('role', 'img');
-    cv.setAttribute('aria-label', (rec.name || 'Specimen') + (rec.variety ? ' ' + rec.variety : '') +
-      ': the grown specimen. ' + (rec.diagnosis || ''));
+    cv.setAttribute('aria-label', FT.sessionTitle(rec) + ': focus ring for the session. ' + (rec.diagnosis || ''));
     if (!FT.Visual || typeof FT.Visual.drawSpecimen !== 'function') return;
 
     const run = () => {
@@ -1694,19 +1669,19 @@
       deleteArmed = true;
       btn.setAttribute('data-armed', 'true');
       armLabel(btn, 'Tap again to delete');
-      announce('Press Delete again within 3 seconds to remove this specimen.');
+      announce('Press Delete again within 3 seconds to remove this session.');
       deleteTimer = setTimeout(disarmDelete, DELETE_WINDOW_MS);
       return;
     }
     disarmDelete();
     const rec = jarRecord;
     if (!FT.Session || typeof FT.Session.remove !== 'function') {
-      toast("Specimens can't be removed right now.");
+      toast("Sessions can't be removed right now.");
       return;
     }
     try { FT.Session.remove(rec.id); } catch (err) {
       console.error(LOG, 'remove failed:', err);
-      toast("Couldn't remove that specimen. Please try again.");
+      toast("Couldn't remove that session. Please try again.");
       return;
     }
     dropThumbs(rec.id);
@@ -1714,7 +1689,7 @@
     // the jar off the shelf and hand focus to a neighbour.
     jarOpener = removeJarFromShelves(rec.id) || firstJar() || $('btnHistBack');
     closeDialog($('dlgJar'));
-    toast('No. ' + pad3(rec.no) + ' was removed from your terrarium.');
+    toast('Session #' + rec.no + ' was removed from your history.');
   }
   function firstJar() {
     const host = $('shelves');
@@ -1796,7 +1771,7 @@
       toast("Couldn't export your data. " + errMsg(err));
       return false;
     }
-    const name = 'hypha-export-' + U.dayKey() + '.json';
+    const name = 'focus-tracker-export-' + U.dayKey() + '.json';
     try { downloadBlob(new Blob([text], { type: 'application/json' }), name); } catch (err) {
       console.error(LOG, 'export download failed:', err);
       toast("Couldn't start the download. " + errMsg(err));
@@ -1807,7 +1782,7 @@
     else {
       try { n = (FT.Session.list() || []).length; } catch (err) { n = null; }
     }
-    toast(n == null ? 'Exported ' + name + '.' : 'Exported ' + plural(n, 'specimen') + ' to ' + name + '.');
+    toast(n == null ? 'Exported ' + name + '.' : 'Exported ' + plural(n, 'session') + ' to ' + name + '.');
     return true;
   }
 
@@ -1877,14 +1852,14 @@
     const S_ = FT.Session;
     try {
       if (!S_ || typeof S_.importJSON !== 'function') throw new Error("Import isn't available right now.");
-      if (file.size > 32 * 1024 * 1024) throw new Error('That file is too large to be a Hypha export.');
+      if (file.size > 32 * 1024 * 1024) throw new Error('That file is too large to be a Focus Tracker export.');
       const text = await readFileText(file);
       const res = await S_.importJSON(text);
       reportImport(res);
     } catch (err) {
       console.warn(LOG, 'import failed:', err);
       toast(err && err.name === 'SyntaxError'
-        ? "That file isn't a Hypha export (it isn't valid JSON)."
+        ? "That file isn't a Focus Tracker export (it isn't valid JSON)."
         : "Couldn't import that file. " + errMsg(err), { timeout: 9000 });
     } finally {
       try { input.value = ''; } catch (err) { /* ignore */ }
@@ -1901,7 +1876,7 @@
       toast("Couldn't import that file." + (detail ? ' ' + detail : ''), { timeout: 9000 });
       return;
     }
-    let text = 'Imported ' + plural(added, 'specimen') + ' (' + skipped + ' already here).';
+    let text = 'Imported ' + plural(added, 'session') + ' (' + skipped + ' already here).';
     if (errCount) text += ' ' + plural(errCount, 'entry', 'entries') + " couldn't be read.";
     toast(text);
   }
@@ -1910,7 +1885,7 @@
     const dlg = $('dlgErase');
     if (!dlg) {
       // SPEC-GAP: without the dialog markup, fall back to a native confirm.
-      if (window.confirm("Erase every specimen, setting and calibration? This can't be undone.")) doErase();
+      if (window.confirm("Erase every session, setting and calibration? This can't be undone.")) doErase();
       return;
     }
     const btn = $('btnEraseConfirm');

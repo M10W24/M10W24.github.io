@@ -9,7 +9,7 @@
   'use strict';
 
   const FT = window.FT, U = FT.util;
-  const LOG = '[Hypha:app]';
+  const LOG = '[Focus:app]';
 
   /* =================================================================== *
    * 1. Small helpers — every DOM helper tolerates a missing element      *
@@ -142,19 +142,19 @@
     intro: 'intro', setup: 'idle', permission: 'idle', error: 'idle', history: 'idle',
     loading: 'loading', calibrate: 'calibrating', summary: 'complete',
   };
-  const TITLE_DEFAULT = 'Hypha — focus, grown in light';
-  const TITLE_SHORT = 'Hypha';
+  const TITLE_DEFAULT = 'Focus Tracker';
+  const TITLE_SHORT = 'Focus Tracker';
 
   const GLYPH = {
-    rooted: '◉', growing: '◉', wavering: '◎', shy: '○', sinking: '○', elsewhere: '○',
-    asleep: '◡', dormant: '·', unseen: '◌', resting: '◠', paused: '‖',
+    focused: '◉', 'timer only': '◉', drifting: '◎', 'looking away': '○', 'looking down': '○', 'other tab': '○',
+    'eyes closed': '◡', away: '·', 'not visible': '◌', break: '◠', paused: '‖',
   };
-  const AWAY_WORDS = new Set(['shy', 'sinking', 'elsewhere']);
+  const AWAY_WORDS = new Set(['looking away', 'looking down', 'other tab']);
 
   const LOAD_PHASE_TEXT = {
     camera: 'Opening the camera…',
     script: 'Fetching the engine…',
-    model: 'Growing the eye…',
+    model: 'Loading the face model…',
     wasm: 'Preparing the engine…',
     warmup: 'Warming up. The first run takes a few seconds…',
   };
@@ -162,16 +162,16 @@
   const MODE_IDS = { free: 'modeFree', pomodoro: 'modePomodoro', deep: 'modeDeep', custom: 'modeCustom' };
   const SENS_IDS = { gentle: 'sensGentle', standard: 'sensStandard', strict: 'sensStrict' };
   const SENS_HELP = {
-    gentle: 'Wider screen area and longer grace for glances. Growth never retracts.',
+    gentle: 'Wider screen area and longer grace for glances.',
     standard: 'Balanced. Glances under about 1.5 s are free.',
     strict: 'Tighter area and shorter grace. For deep-work sprints.',
   };
 
   const CAL_TEXT = {
-    centerFull: 'Sit as you usually work. Look at the glowing spore.',
-    settling: 'Hold still… it\'s taking root.',
-    quick: 'Look at the spore for a moment.',
-    done: 'Rooted. Your screen is mapped.',
+    centerFull: 'Sit as you usually work. Look at the dot in the center.',
+    settling: 'Hold still for a moment…',
+    quick: 'Look at the dot for a moment.',
+    done: 'Done. Your screen is mapped.',
   };
   const CORNER_NAMES = ['', 'top-left', 'top-right', 'bottom-right', 'bottom-left'];
   const CAL_HINTS = {
@@ -190,7 +190,7 @@
     },
     Unsupported: {
       title: 'This browser can\'t use the camera',
-      body: 'Try a recent Chrome, Edge, Firefox or Safari. You can still use Hypha as a timer.',
+      body: 'Try a recent Chrome, Edge, Firefox or Safari. You can still use it as a timer.',
       actions: ['timer', 'demo', 'back'],
     },
     NotAllowedError: {
@@ -225,12 +225,12 @@
     },
     NoWebGL2: {
       title: 'Face tracking needs WebGL2',
-      body: 'Turn on hardware acceleration in your browser settings, then reload. Hypha still works as a timer.',
+      body: 'Turn on hardware acceleration in your browser settings, then reload. The timer still works without it.',
       actions: ['timer', 'demo', 'back'],
     },
     ModelLoadFailed: {
       title: 'Couldn\'t download the face model',
-      body: 'Hypha fetches about 7 MB once, then keeps it cached. Check your connection and try again.',
+      body: 'Face tracking downloads about 7 MB once, then keeps it cached. Check your connection and try again.',
       actions: ['retry', 'timer', 'demo'],
     },
     ModelInitFailed: {
@@ -262,12 +262,12 @@
 
   /** Intro step-2 scripted demo (§2.4.1, §6.7). Each state lasts 2.8 s. */
   const INTRO_DEMO = [
-    { word: 'rooted', gloss: 'Eyes on your work, so it grows.', state: 'focused', cause: null, focus: 0.92, dir: { x: 0.06, y: 0.04 } },
-    { word: 'wavering', gloss: 'Attention near the edge, so growth slows.', state: 'drifting', cause: null, focus: 0.6, dir: { x: 0.9, y: 0.12 }, sided: true },
-    { word: 'shy', gloss: 'You turned away, so it flinches from that side.', state: 'away', cause: 'turned', focus: 0.35, dir: { x: 1.5, y: 0.05 }, sided: true, offScreen: true },
-    { word: 'sinking', gloss: 'A phone check drains the light downward.', state: 'away', cause: 'down', focus: 0.3, dir: { x: 0.05, y: 1.6 }, offScreen: true },
-    { word: 'asleep', gloss: 'Eyes closed: it rests with you. Thinking is allowed.', state: 'eyes-closed', cause: 'eyes', focus: 0.5, dir: null, eyeOpen: 0 },
-    { word: 'dormant', gloss: 'You stepped away. It waits, and your timer can pause.', state: 'absent', cause: 'absent', focus: 0.2, dir: null, present: false },
+    { word: 'focused', gloss: 'Eyes on your work. Focused time counts up.', state: 'focused', cause: null, focus: 0.92, dir: { x: 0.06, y: 0.04 } },
+    { word: 'drifting', gloss: 'Your attention is wandering toward the edge of the screen.', state: 'drifting', cause: null, focus: 0.6, dir: { x: 0.9, y: 0.12 }, sided: true },
+    { word: 'looking away', gloss: 'You turned away from the screen. That counts as a distraction.', state: 'away', cause: 'turned', focus: 0.35, dir: { x: 1.5, y: 0.05 }, sided: true, offScreen: true },
+    { word: 'looking down', gloss: 'Looking down, often at a phone.', state: 'away', cause: 'down', focus: 0.3, dir: { x: 0.05, y: 1.6 }, offScreen: true },
+    { word: 'eyes closed', gloss: 'Eyes closed. Short pauses to think are fine.', state: 'eyes-closed', cause: 'eyes', focus: 0.5, dir: null, eyeOpen: 0 },
+    { word: 'away', gloss: 'You stepped away. The timer can pause until you\'re back.', state: 'absent', cause: 'absent', focus: 0.2, dir: null, present: false },
   ];
   const INTRO_STEP_MS = 2800;
 
@@ -302,6 +302,7 @@
     inited: false,
     screen: null,
     settings: normSettings(null),
+    today: null,             // {heldMs, goalMs} for the idle ring
 
     // begin flow
     flow: null,              // {token, source, context} while a begin/recalibrate flow runs
@@ -395,7 +396,7 @@
     pipLastDraw: 0,
 
     // intro
-    intro: { step: 0, demoIdx: 0, demoSince: 0, demoTimer: 0, blinkTimer: 0, side: -1 },
+    intro: { step: 0, demoIdx: 0, demoSince: 0, demoTimer: 0, side: -1 },
 
     // misc
     raf: 0,
@@ -654,7 +655,7 @@
   }
   function onEnterScreen(name, prev) {
     switch (name) {
-      case 'intro': enterIntro(prev !== 'intro'); break;
+      case 'intro': enterIntro(); break;
       case 'setup': enterSetup(); break;
       case 'loading': enterLoading(); break;
       case 'session': renderSessionStatic(); break;
@@ -722,19 +723,8 @@
   /* =================================================================== *
    * 8. Intro (§2.4.1) + the step-2 scripted state demo (§6.7)            *
    * =================================================================== */
-  function enterIntro(fresh) {
-    if (fresh) {
-      call('Visual', 'newOrganism', 7, { refActiveSec: 420, retract: false });
-      call('Visual', 'prefill', 420, 0.9);
-    }
+  function enterIntro() {
     setIntroStep(0);
-    clearInterval(S.intro.blinkTimer);
-    S.intro.blinkTimer = setInterval(() => {
-      if (S.screen !== 'intro' || document.hidden) return;
-      const d = introDemoCurrent();
-      if (d && (d.state === 'eyes-closed' || d.state === 'absent')) return;
-      call('Visual', 'pulse', 'blink');
-    }, 3500);
   }
   function setIntroStep(n) {
     n = U.clamp(n | 0, 0, 2);
@@ -747,7 +737,7 @@
       Array.from(dots).forEach((d, i) => setAttr(d, 'aria-current', i === n ? 'step' : null));
     }
     show('btnIntroBack', n > 0);
-    setBtn('btnIntroNext', n === 2 ? 'Let\'s grow something' : 'Next');
+    setBtn('btnIntroNext', n === 2 ? 'Get started' : 'Next');
     if (n === 2) startIntroDemo();
     else stopIntroDemoScript();
   }
@@ -774,8 +764,6 @@
   }
   function stopIntroDemo() {
     stopIntroDemoScript();
-    clearInterval(S.intro.blinkTimer);
-    S.intro.blinkTimer = 0;
   }
   function introDemoCurrent() {
     return S.screen === 'intro' && S.intro.step === 2 && S.intro.demoIdx >= 0 ? INTRO_DEMO[S.intro.demoIdx] : null;
@@ -1005,7 +993,6 @@
     renderCameraState();
   }
 
-  const pad3 = (n) => String(n == null ? 0 : n).padStart(3, '0');
   function renderRecoverBanner() {
     const draft = sessionActive() ? null : call('Session', 'getDraft');
     if (!draft) { show('recoverBanner', false); return; }
@@ -1022,7 +1009,7 @@
     const rec = call('Session', 'recoverDraft');
     show('recoverBanner', false);
     if (rec) {
-      toast('Saved to your terrarium as No. ' + pad3(rec.no) + '.', { action: { label: 'Terrarium', onClick: () => go('history') } });
+      toast('Saved to your history as session ' + rec.no + '.', { action: { label: 'History', onClick: () => go('history') } });
     } else {
       toast('That session was too short to keep.');
     }
@@ -1232,9 +1219,9 @@
    */
   async function recalibrate(kind, background) {
     if (S.flow || S.fruiting) return;
-    if (get('Detector', 'calibrating', false)) { toast('Already re-centering. Glance at the spore.', { id: 'recenter', timeout: 3000 }); return; }
+    if (get('Detector', 'calibrating', false)) { toast('Already re-centering. Glance at the dot.', { id: 'recenter', timeout: 3000 }); return; }
     const inSession = sessionActive();
-    if (inSession && background && detRunning()) { backgroundRecenter('Re-centering. Glance at the spore.'); return; }
+    if (inSession && background && detRunning()) { backgroundRecenter('Re-centering. Glance at the dot.'); return; }
     const context = inSession ? 'session' : 'setup';
     const source = inSession && S.sessionSource && S.sessionSource !== 'none'
       ? S.sessionSource
@@ -1349,7 +1336,7 @@
   }
 
   function resetCalUI(kind) {
-    setText('calStep', kind === 'quick' ? 'RE-CENTER' : kind === 'full' ? 'SEED 1 OF 5' : 'SEED 1 OF 1');
+    setText('calStep', kind === 'quick' ? 'RE-CENTER' : kind === 'full' ? 'POINT 1 OF 5' : 'POINT 1 OF 1');
     setText('calText', kind === 'quick' ? CAL_TEXT.quick : CAL_TEXT.centerFull);
     show('calQuality', false);
     setText('calHint', '');
@@ -1382,13 +1369,13 @@
     };
     const kind = ev.kind || S.calKind;
     const total = ev.total || pts.length || 1;
-    setText('calStep', kind === 'quick' ? 'RE-CENTER' : 'SEED ' + Math.min(idx + 1, total) + ' OF ' + total);
+    setText('calStep', kind === 'quick' ? 'RE-CENTER' : 'POINT ' + Math.min(idx + 1, total) + ' OF ' + total);
 
     let text;
     if (ev.phase === 'done') text = CAL_TEXT.done;
     else if (ev.phase === 'failed') text = ev.message || 'Couldn\'t find your face';
     else if (idx === 0) text = ev.faceFound && ev.progress > 0 ? CAL_TEXT.settling : (kind === 'quick' ? CAL_TEXT.quick : CAL_TEXT.centerFull);
-    else text = 'Now look at the seed in the ' + (CORNER_NAMES[idx] || 'next') + ' corner of your screen.';
+    else text = 'Now look at the dot in the ' + (CORNER_NAMES[idx] || 'next') + ' corner of your screen.';
     setText('calText', text);
 
     if (ev.faceFound || ev.phase === 'done') setCalQuality(ev.quality);
@@ -1479,7 +1466,7 @@
       rounds: plan.rounds, longEvery: plan.longEvery, intention: intention, source: source, sensitivity: readSens(),
     };
     if (!has('Session', 'start')) {
-      toast('Hypha couldn\'t start a session in this browser.');
+      toast('Couldn\'t start a session in this browser.');
       go('setup');
       return;
     }
@@ -1581,30 +1568,30 @@
   function sessionWord(L) {
     if (!L) return 'none';
     if (L.phase === 'paused') return 'paused';
-    if (L.phase === 'break') return 'resting';
-    if (L.source === 'none' || L.measured === false) return 'growing';
-    return L.word || 'unseen';
+    if (L.phase === 'break') return 'break';
+    if (L.source === 'none' || L.measured === false) return 'timer only';
+    return L.word || 'not visible';
   }
   function pausedTextFor(reason, round) {
-    if (reason === 'away') return 'Dormant. Resumes when you\'re back.';
+    if (reason === 'away') return 'Paused while you\'re away. Resumes when you\'re back.';
     if (reason === 'round') return round ? 'Round ' + round + ' is ready.' : 'The next round is ready.';
     return 'Paused';
   }
   function currentReason(word, L) {
     if (word === 'paused') return pausedTextFor(L && L.pauseReason, L && L.round);
-    if (word === 'resting') return 'Resting. Look at something far away.';
-    if (word === 'growing') return 'Timer only. Nothing is measured; the time counts as held.';
+    if (word === 'break') return 'On a break. Look at something far away.';
+    if (word === 'timer only') return 'Timer only. Nothing is measured; all the time counts as focused.';
     const sm = S.sample;
     if (sm && sm.reason && nowMs() - (sm.t || 0) < 2500) return sm.reason;
     if (S.detReason) return S.detReason;
-    return word === 'unseen' ? 'Not observed. Not counted.' : '';
+    return word === 'not visible' ? 'Can\'t see you clearly. Not counted.' : '';
   }
   function applyWord(word, reason) {
     const t = nowMs();
     if (word !== S.word) { S.word = word; S.wordSince = t; }
-    if (word === 'rooted') S.lastRootedAt = t;
+    if (word === 'focused') S.lastRootedAt = t;
     if (!AWAY_WORDS.has(word) && word !== 'none') S.titleWord = word;
-    bodyAttr('state', word); // SPEC-GAP: also 'paused' / 'resting' so CSS can colour those words (§2.4.6).
+    bodyAttr('state', word); // SPEC-GAP: also 'paused' / 'break' so CSS can colour those words (§2.4.6).
     setText('stateWord', word === 'none' ? '' : word);
     setAttr('stateWord', 'title', reason || null);
     setText('stateReason', reason || '');
@@ -1612,13 +1599,13 @@
   function maybeAnnounceState(t) {
     if (!sessionActive() || S.fruiting) return;
     const w = S.word;
-    if (w === 'paused' || w === 'resting' || w === 'none') return; // phase announcements cover these
+    if (w === 'paused' || w === 'break' || w === 'none') return; // phase announcements cover these
     if (S.announcedWord == null) { S.announcedWord = w; return; }
     if (w === S.announcedWord) return;
     if (t - S.wordSince < 3000 || t - S.lastStateAnnounceAt < 10000) return;
     S.announcedWord = w;
     S.lastStateAnnounceAt = t;
-    announce(w === 'rooted' ? 'Focused.' : (currentReason(w, S.live) || w));
+    announce(w === 'focused' ? 'Focused.' : (currentReason(w, S.live) || w));
   }
 
   function onSessionTick(L) {
@@ -1664,7 +1651,7 @@
     const rem = L.phaseRemainingMs;
     setText('breakText', rem != null && rem <= 5000
       ? 'Back to it in ' + Math.max(1, Math.ceil(rem / 1000)) + '…'
-      : 'Look at something far away. The lid gathers dew while you do.');
+      : 'Look at something far away to rest your eyes.');
     const el = $('breakRest');
     if (!el) return;
     if (S.sessionSource === 'none' || L.measured === false) {
@@ -1746,7 +1733,7 @@
     if (breakEnded) {
       call('Audio', 'play', 'break-end');
       if (S.settings.recenterAfterBreak && S.sessionSource === 'camera' && detRunning()) {
-        backgroundRecenter('Re-centering. Glance at the spore.');
+        backgroundRecenter('Re-centering. Glance at the dot.');
       }
     }
     setChrome('full');
@@ -1770,7 +1757,7 @@
    * 16. Banners (camera, drowsy) and the demo bar                        *
    * =================================================================== */
   const CAM_BANNER = {
-    lost: { text: 'Camera disconnected. Your session continues, and the network rests until it\'s back.', retry: true, timer: true },
+    lost: { text: 'Camera disconnected. Your session continues, but focus isn\'t tracked until it\'s back.', retry: true, timer: true },
     muted: { text: 'Camera paused by your system. That time isn\'t counted against you.', retry: false, timer: false },
     stalled: { text: 'Camera frames stopped. That time isn\'t counted against you.', retry: true, timer: false },
     tracking: { text: 'Face tracking stopped. Your session continues as a timer until it\'s back.', retry: true, timer: true },
@@ -1915,7 +1902,7 @@
     setText('nStreak', U.fmtDuration(L.streakMs || 0));
     setText('nLongest', U.fmtDuration(L.longestStreakMs || 0));
     const d = L.distractions || 0, m = L.mended || 0, r = L.returns || 0;
-    setText('nScars', !measured && !d ? dash : d === 0 ? 'none' : d + (m > 0 ? ' · ' + m + ' mended' : ''));
+    setText('nScars', !measured && !d ? dash : d === 0 ? 'none' : d + (m > 0 ? ' · ' + m + ' recovered' : ''));
     setText('nReturns', !measured && !r ? dash : r === 0 ? '0'
       : r + (L.medianRecoveryMs != null ? ' · median ' + U.fmtDuration(L.medianRecoveryMs) : ''));
     setText('nDepth', measured ? U.fmtPercent(L.depth || 0) : dash);
@@ -1937,7 +1924,7 @@
     const ok = call('Session', 'forgiveLast');
     if (ok) {
       dismissToast('drift');
-      toast('Forgiven. That drift counts as held now.', { id: 'forgive', timeout: 4000 });
+      toast('Got it. That drift counts as focused time now.', { id: 'forgive', timeout: 4000 });
       announce('Forgiven.');
       renderNotes(call('Session', 'getLive') || S.live);
     } else {
@@ -2045,7 +2032,7 @@
   function evalChrome(t) {
     const L = S.live;
     if (S.screen !== 'session' || S.fruiting || !S.settings.fadeChrome || !L || L.phase !== 'running') { setChrome('full'); return; }
-    const rootedOk = S.word === 'rooted' || (S.chrome !== 'full' && t - S.lastRootedAt <= 2000);
+    const rootedOk = S.word === 'focused' || (S.chrome !== 'full' && t - S.lastRootedAt <= 2000);
     if (!rootedOk || t - S.lastActivity < 4000 || overlayOpen() || focusInChrome()) { setChrome('full'); return; }
     setChrome((L.depth || 0) >= 0.6 ? 'deep' : 'dim');
   }
@@ -2057,7 +2044,7 @@
     if (!sessionActive() || S.fruiting) return;
     const L = call('Session', 'getLive') || S.live;
     const short = !L || (L.activeMs || 0) < 30000;
-    setText('endBody', short ? 'It\'s under 30 seconds, so it won\'t be saved.' : 'It will fruit and join your terrarium.');
+    setText('endBody', short ? 'It\'s under 30 seconds, so it won\'t be saved.' : 'It will be saved to your history.');
     openDialog('dlgEnd');
   }
   function endSession(save) {
@@ -2116,8 +2103,8 @@
     updateFavicon(true);
     const pct = record.stats && record.stats.focusPct;
     announce(pct != null
-      ? 'Session complete. Held ' + Math.round(pct * 100) + ' percent.'
-      : 'Session complete. ' + U.fmtDuration(record.activeMs || 0) + ' grown.');
+      ? 'Session complete. Focused ' + Math.round(pct * 100) + ' percent of the time.'
+      : 'Session complete. ' + U.fmtDuration(record.activeMs || 0) + ' total.');
     const skip = $('btnFruitSkip');
     if (skip) { try { skip.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
 
@@ -2148,9 +2135,9 @@
   function fillSummary(record) {
     if (has('History', 'fillSummary')) { call('History', 'fillSummary', record); return; }
     // SPEC-GAP: minimal fallback when history.js is unavailable.
-    setText('specimenName', record.name || 'Hypha');
-    setText('specimenVar', record.variety || '');
-    const label = call('Session', 'labelFor', record) || ('No. ' + pad3(record.no));
+    setText('specimenName', FT.sessionTitle(record));
+    setText('specimenVar', '');
+    const label = call('Session', 'labelFor', record) || ('Session ' + record.no);
     setText('specimenLabel', (record.source === 'sim' && label.indexOf('DEMO') !== 0 ? 'DEMO · ' : '') + label);
     setText('sumDiagnosis', record.diagnosis || '');
   }
@@ -2162,7 +2149,7 @@
     const w = S.word;
     if (AWAY_WORDS.has(w)) {
       if (S.away.active && nowMs() - S.away.since >= 2000) return w;
-      return S.titleWord || 'rooted';
+      return S.titleWord || 'focused';
     }
     return w;
   }
@@ -2170,11 +2157,11 @@
     let title;
     if (!S.settings.liveTitle) title = TITLE_SHORT;
     else if (S.fruiting || (Date.now() < S.fruitTitleUntil && (S.screen === 'summary' || S.screen === 'session'))) {
-      title = '✺ No. ' + pad3(S.fruitNo) + ' · fruiting';
+      title = '✓ Session complete';
     } else if (S.screen === 'summary') title = TITLE_SHORT;
     else if (sessionActive() && S.live && S.live.phase !== 'complete' && S.live.phase !== 'idle') {
       const w = titleWordNow();
-      title = (GLYPH[w] || '◉') + ' ' + timerValue(S.live) + ' · ' + (w === 'none' ? 'rooted' : w);
+      title = (GLYPH[w] || '◉') + ' ' + timerValue(S.live) + ' · ' + (w === 'none' ? 'focused' : w);
     } else title = TITLE_DEFAULT;
     if (force || title !== S.lastTitle) {
       S.lastTitle = title;
@@ -2184,12 +2171,12 @@
   function faviconColor(word, D) {
     const P = FT.PALETTE, h = U.hexToRgb;
     switch (word) {
-      case 'rooted': case 'growing': return U.mixRgb(h(P.hypha), h(P.flow), U.clamp01(D));
-      case 'wavering': return h(P.hyphaDim);
-      case 'shy': case 'sinking': case 'elsewhere': return h(P.scar);
-      case 'asleep': return h(P.amber);
-      case 'dormant': return h(P.frost);
-      case 'resting': return h(P.core);
+      case 'focused': case 'timer only': return h(P.hypha);
+      case 'drifting': return h(P.hyphaDim);
+      case 'looking away': case 'looking down': case 'other tab': return h(P.scar);
+      case 'eyes closed': return h(P.amber);
+      case 'away': return h(P.frost);
+      case 'break': return h(P.flow);
       default: return h(P.muted);
     }
   }
@@ -2267,7 +2254,7 @@
     if (away >= 20000 && !A.toast && !document.hidden && t - S.lastNudgeToastAt >= 180000) {
       A.toast = true;
       S.lastNudgeToastAt = t;
-      toast('The network is waiting.', { id: 'nudge', timeout: 5000 });
+      toast('Still there? Your session is waiting.', { id: 'nudge', timeout: 5000 });
     }
     if (away >= 30000 && !A.notify && document.hidden && s.notify && FT.env.hasNotifications &&
         t - S.lastNotifyAt >= 300000) {
@@ -2277,8 +2264,8 @@
       A.notify = true;
       S.lastNotifyAt = t;
       try {
-        const n = new Notification('Hypha is waiting', {
-          body: 'You\'ve been away from your work for 30 seconds.', tag: 'hypha-nudge', silent: true,
+        const n = new Notification('Your focus session is waiting', {
+          body: 'You\'ve been away from your work for 30 seconds.', tag: 'focus-nudge', silent: true,
         });
         n.onclick = () => { try { window.focus(); } catch (e) { /* ignore */ } try { n.close(); } catch (e) { /* ignore */ } };
       } catch (err) { warnOnce('Notification failed', err); }
@@ -2317,7 +2304,7 @@
     try {
       copyStylesInto(pipWin);
       const doc = pipWin.document;
-      doc.title = 'Hypha';
+      doc.title = 'Focus Tracker';
       doc.documentElement.setAttribute('data-theme', document.documentElement.getAttribute('data-theme') || 'nocturne');
       doc.body.className = 'pip';
       const mk = (tag, id, cls, text) => {
@@ -2338,7 +2325,7 @@
       const actions = mk('div', null, 'pip-actions');
       const pauseBtn = mk('button', 'pipPause', 'btn btn-ghost btn-sm', 'Pause');
       pauseBtn.type = 'button';
-      const backBtn = mk('button', 'pipBack', 'btn btn-text btn-sm', 'Back to Hypha');
+      const backBtn = mk('button', 'pipBack', 'btn btn-text btn-sm', 'Back to app');
       backBtn.type = 'button';
       pauseBtn.addEventListener('click', togglePause);
       backBtn.addEventListener('click', () => { try { window.focus(); } catch (e) { /* ignore */ } });
@@ -2902,6 +2889,7 @@
     if (!agg) { setText('todayStat', 'Today —'); return; }
     const held = (agg.today && agg.today.heldMs) || 0;
     const streak = (agg.dayStreak && agg.dayStreak.current) || 0;
+    S.today = { heldMs: held, goalMs: (+S.settings.goalMin || 50) * 60000 };
     let txt = 'Today ' + (held > 0 ? U.fmtDuration(held) : '—');
     if (streak > 0) txt += ' · ' + streak + '-day streak';
     setText('todayStat', txt);
@@ -2928,9 +2916,9 @@
     if (L.phase === 'break' && L.phaseRemainingMs != null) parts.push(minutesLeftText(L.phaseRemainingMs) + ' of break left');
     else {
       const rem = L.sessionRemainingMs != null ? L.sessionRemainingMs : L.phaseRemainingMs;
-      parts.push(rem != null ? minutesLeftText(rem) + ' left' : U.fmtDuration(L.activeMs || 0) + ' grown');
+      parts.push(rem != null ? minutesLeftText(rem) + ' left' : U.fmtDuration(L.activeMs || 0) + ' so far');
     }
-    if (L.focusPct != null) parts.push(U.fmtPercent(L.focusPct) + ' held');
+    if (L.focusPct != null) parts.push(U.fmtPercent(L.focusPct) + ' focused');
     if (S.word && S.word !== 'none') parts.push(S.word);
     const text = parts.join(' · ');
     toast(text, { id: 'time', timeout: 5000 });
@@ -3091,10 +3079,7 @@
     }
   }
   function onBlink() {
-    if ((sessionPhase() === 'running' && !S.fruiting) || S.screen === 'intro') {
-      call('Visual', 'pulse', 'blink');
-      call('Audio', 'play', 'blink');
-    }
+    // Blinks feed the blink-rate stat only; they make no sound or visual pulse.
   }
 
   /* =================================================================== *
@@ -3125,7 +3110,7 @@
     if (!ev) return;
     call('Audio', 'play', 'milestone');
     call('Visual', 'pulse', 'milestone');
-    if (ev.minutes) announce(ev.minutes + ' minutes rooted.');
+    if (ev.minutes) announce(ev.minutes + ' minutes focused.');
   }
   function onGap(ev) {
     if (!ev) return;
@@ -3143,12 +3128,12 @@
   function onStoreError(ev) {
     const t = nowMs();
     if (ev && ev.quota) {
-      toast('Storage was full, so older specimens\' timelines were archived.', { id: 'store-quota' });
+      toast('Storage was full, so older sessions\' timelines were archived.', { id: 'store-quota' });
       return;
     }
     if (t - lastStoreToastAt < 300000) return;
     lastStoreToastAt = t;
-    toast('Couldn\'t save to this browser\'s storage. Export your specimens to keep them.', { id: 'store-error', timeout: 8000 });
+    toast('Couldn\'t save to this browser\'s storage. Export your sessions to keep them.', { id: 'store-error', timeout: 8000 });
   }
 
   /* =================================================================== *
@@ -3245,7 +3230,7 @@
       now: now, phase: phase, state: 'none', cause: null, stateAgeMs: 0, focus: 0.75, depth: 0,
       dir: null, offScreen: false, offCause: null, eyeOpen: 1, drowsiness: 0, present: true,
       rimProgress: null, breakProgress: 0, lookAway: 0, loading: null, calibration: null,
-      hidden: document.hidden,
+      hidden: document.hidden, sessionFocus: null, measured: true, today: S.today,
     };
     if (phase === 'intro') {
       const d = introDemoCurrent();
@@ -3262,6 +3247,7 @@
       } else {
         input.state = 'focused';
       }
+      input.demo = !!d;
       return input;
     }
     if (phase === 'fruiting' || phase === 'complete') {
@@ -3290,6 +3276,8 @@
     if (inSession && S.live) {
       const L = S.live;
       input.depth = U.clamp01(L.depth || 0);
+      input.sessionFocus = L.focusPct != null && isFinite(L.focusPct) ? L.focusPct : null;
+      input.measured = L.measured !== false && L.source !== 'none';
       input.rimProgress = L.rimProgress != null && isFinite(L.rimProgress) ? L.rimProgress : null;
       if (L.phase === 'break') {
         input.breakProgress = L.phaseTotalMs ? U.clamp01((L.phaseElapsedMs || 0) / L.phaseTotalMs) : 0;
@@ -3341,13 +3329,13 @@
   }
 
   const REQUIRED_IDS = (
-    'stage vignette grain camVideo topbar brand todayStat btnSound btnPip btnHistory btnSettings btnHelp ' +
+    'stage vignette camVideo topbar brand todayStat btnSound btnPip btnHistory btnSettings btnHelp btnAbout ' +
     'eye eyeCanvas eyeLid eyePip eyeLabel eyeReq eyeMenu eyeModeMesh eyeModeVideo eyeModeOff btnLens btnPrivacy ' +
     'toasts srStatus srAlert debugPanel icons favicon ' +
     'screen-intro introCard introStep0 introStep1 introStep2 introDots introDemoWord introDemoGloss btnIntroSkip btnIntroBack btnIntroNext btnIntroPrivacy ' +
     'screen-setup recoverBanner recoverText btnRecoverSave btnRecoverDiscard setupCard setupForm intention modeFree modePomodoro modeDeep modeCustom ' +
     'customFields customWork customBreak customRounds modeSummary sensGentle sensStandard sensStrict sensHelp cameraRow framingCanvas cameraState ' +
-    'btnCameraFix btnCameraCheck btnBegin btnTimerOnly btnDemo btnExitDemo setupNote setupLinks linkHistory linkPrivacy linkHelp ' +
+    'btnCameraFix btnCameraCheck btnBegin btnTimerOnly btnDemo btnExitDemo setupNote setupLinks linkHistory linkPrivacy linkHelp linkAbout ' +
     'screen-permission btnAllowCamera btnPermTimerOnly btnPermBack ' +
     'screen-loading loadPhase loadBytes loadProgress loadHint btnLoadCancel ' +
     'screen-calibrate calStep calText calQuality calHint btnCalSkip btnCalCancel ' +
@@ -3363,7 +3351,7 @@
     'dlgSettings btnSettingsClose setSensitivity setDesk setEyesClosed setStrictTab setAutoPause setWork setShort setLong setRounds setGoal ' +
     'setAutoNext setRecenter setSound setSoundscape setChimes setVolume setNudgeSound setNotify setLiveTitle setForgiveToast setMotion ' +
     'setEyeMode setFadeChrome setCamera btnRecalibrate btnForgetCal calInfo btnSetExport btnSetImport btnSetErase ' +
-    'dlgPrivacy privCam privReqCount privReqList privBlocked privCsp btnPrivacyClose ' +
+    'dlgPrivacy privCam privReqCount privReqList privBlocked privCsp btnPrivacyClose dlgAbout btnAboutClose ' +
     'dlgHelp btnHelpClose dlgEnd endBody btnEndConfirm btnEndDiscard btnEndCancel ' +
     'dlgJar jarCanvas jarTitle jarMeta jarStats jarDiagnosis btnJarKeepsake btnJarDelete btnJarClose ' +
     'dlgErase btnEraseConfirm btnEraseCancel'
@@ -3393,6 +3381,7 @@
     });
     click('btnSettings', () => openDialog('dlgSettings'));
     click('btnHelp', () => openDialog('dlgHelp'));
+    click('btnAbout', () => openDialog('dlgAbout'));
 
     // The Eye + menu
     const eye = $('eye');
@@ -3469,6 +3458,7 @@
     click('linkHistory', (e) => { e.preventDefault(); go('history'); });
     click('linkPrivacy', (e) => { e.preventDefault(); openDialog('dlgPrivacy'); });
     click('linkHelp', (e) => { e.preventDefault(); openDialog('dlgHelp'); });
+    click('linkAbout', (e) => { e.preventDefault(); openDialog('dlgAbout'); });
     click('btnRecoverSave', onRecoverSave);
     click('btnRecoverDiscard', onRecoverDiscard);
 
@@ -3520,6 +3510,7 @@
     // Dialogs
     wireDialog('dlgSettings', 'btnSettingsClose', true);
     wireDialog('dlgPrivacy', 'btnPrivacyClose', true);
+    wireDialog('dlgAbout', 'btnAboutClose', true);
     wireDialog('dlgHelp', 'btnHelpClose', true);
     wireDialog('dlgEnd', 'btnEndCancel', false);
     wireDialog('dlgJar', null, false);
@@ -3655,7 +3646,7 @@
 
     // 9. Storage unavailable.
     if (!FT.store.available) {
-      toast('Hypha can\'t save in this browser mode. Export your specimens to keep them.', { id: 'storage', timeout: 12000 });
+      toast('Sessions can\'t be saved in this browser mode. Export them to keep them.', { id: 'storage', timeout: 12000 });
     }
 
     // 10. One-shot audio unlock on the first gesture.

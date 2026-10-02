@@ -10,7 +10,7 @@
   'use strict';
 
   const FT = window.FT, U = FT.util;
-  const LOG = '[Hypha:detector]';
+  const LOG = '[Focus:detector]';
   const TAU = U.TAU;
   const DEG = 180 / Math.PI;
 
@@ -57,15 +57,15 @@
 
   /** Reason copy, exact (§5.7). */
   const REASON = {
-    focused: 'Rooted: eyes on your work.',
+    focused: 'Focused: eyes on your work.',
     focusedEyes: 'Eyes closed. Counted as thinking.',
-    drifting: 'Wavering: attention near the edge.',
+    drifting: 'Drifting: attention near the edge.',
     turned: 'Head turned to the {side}.',
     glance: 'Eyes wandered to the {side}.',
     down: 'Looking down. Phone check?',
     up: 'Looking up, off the screen.',
     tab: 'Another tab or window has focus.',
-    eyes: 'Eyes closed. Resting is fine; growth pauses.',
+    eyes: 'Eyes closed. Focused time pauses.',
     eyesLong: 'Eyes closed for a while.',
     eyesDrowsy: 'Eyes are heavy. A break might help.',
     absent: 'No one at the desk.',
@@ -74,7 +74,7 @@
     'camera-off': 'Camera off. Timer only.',
     'low-confidence': "Can't see you clearly. Not counted.",
     recovering: 'Restarting face tracking…',
-    calibrating: 'Calibrating: follow the seeds.',
+    calibrating: 'Calibrating: follow the dots.',
   };
   /** Unseen reasons, highest priority first. */
   const UNSEEN_ORDER = ['camera-off', 'recovering', 'muted', 'stalled', 'low-confidence'];
@@ -241,9 +241,9 @@
     return null;
   }
   function wordFor(state, cause) {
-    if (state === 'calibrating') return 'germinating';
+    if (state === 'calibrating') return 'calibrating';
     const info = FT.CODES[FT.codeFor(state, cause)];
-    return info ? info.word : 'unseen';
+    return info ? info.word : 'not visible';
   }
   function videoAspect() {
     return video && video.videoWidth && video.videoHeight ? video.videoWidth / video.videoHeight : 4 / 3;

@@ -1,15 +1,15 @@
 /*!
- * Hypha — js/session.js  (SPEC.md §4.4 · FT.Session)
+ * Focus Tracker — js/session.js  (SPEC.md §4.4 · FT.Session)
  * Session lifecycle (modes, rounds, breaks, pauses), the deterministic 1 Hz timeline recorder,
  * live stats, persistence (records, history index, drafts, quota trimming), history aggregation,
- * export / import / erase, and specimen naming (species, variety, diagnosis, label).
+ * export / import / erase, and session naming (diagnosis, label).
  * Classic script, loaded with `defer` after core.js. Depends only on core.js and never references
  * FT.Detector: it listens to the detector's bus events (§4.2) instead.
  */
 (function () {
   'use strict';
   const FT = window.FT, U = FT.util;
-  const LOG = '[Hypha:session]';
+  const LOG = '[Focus:session]';
 
   /* =================================================================== *
    * 0. Constants                                                         *
@@ -204,7 +204,7 @@
           FT.store.set(key, full);
         }
         FT.store.set('sessions', { v: 1, items: items });
-        console.warn(LOG, 'Storage is full: archived the timeline of specimen No. ' + pad3(s.no) + '.');
+        console.warn(LOG, 'Storage is full: archived the timeline of session #' + s.no + '.');
         return true;
       }
       return false;
@@ -237,7 +237,7 @@
     }
     if (out.length) {
       out.sort((a, b) => b.startedAt - a.startedAt);
-      console.warn(LOG, 'Rebuilt the history index from ' + out.length + ' stored specimens.');
+      console.warn(LOG, 'Rebuilt the history index from ' + out.length + ' stored sessions.');
       FT.store.set('sessions', { v: 1, items: out });
     }
     return out;
@@ -322,7 +322,6 @@
   const isActive = () => phase === 'running' || phase === 'paused' || phase === 'break';
   const tlLen = () => (rec && rec.timeline ? rec.timeline.s.length : 0);
   const inBreakNow = () => phase === 'break' || (phase === 'paused' && resumeTo === 'break');
-  const pad3 = (n) => String(Math.max(0, Math.floor(+n || 0))).padStart(3, '0');
 
   function setPhase(next, reason) {
     prevPhase = phase;
@@ -756,7 +755,7 @@
     const fp = st.focusPct;
     if (fp == null || !isFinite(fp)) return 'Timer only. Nothing was measured, but the time was yours.';
     const m = +st.distractions || 0;
-    if (m === 0) return fp >= 0.9 ? 'Unbroken. Not a single scar.' : 'No scars, just a little wavering at the edges.';
+    if (m === 0) return fp >= 0.9 ? 'No distractions. Solid focus the whole way through.' : 'No distractions, just a little drifting at the edges.';
     const bc = st.byCause || {};
     let top = FT.CAUSES[0], n = -1;
     for (const c of FT.CAUSES) {
@@ -807,8 +806,8 @@
       r.stats = buildStats(FT.analyze(null), c);
     }
     r.species = speciesFor(r);
-    r.name = 'Hypha ' + r.species;
-    r.variety = varietyFor(r.intention, r.startedAt);
+    r.name = FT.sessionTitle(r);
+    r.variety = '';
     r.diagnosis = diagnosisFor(r.stats);
     return an;
   }
@@ -825,14 +824,14 @@
   function labelFor(r) {
     if (!r || typeof r !== 'object') return '';
     const st = r.stats && typeof r.stats === 'object' ? r.stats : r;
-    const parts = ['No. ' + pad3(r.no), Math.round((+r.activeMs || 0) / 60000) + ' min'];
+    const parts = ['#' + Math.max(0, Math.floor(+r.no || 0)), Math.round((+r.activeMs || 0) / 60000) + ' min'];
     const fp = r.source === 'none' ? null : st.focusPct;
     if (fp != null && isFinite(fp)) {
-      parts.push(U.fmtPercent(fp) + ' held');
+      parts.push(U.fmtPercent(fp) + ' focused');
       const m = Math.max(0, Math.round(+st.distractions || 0));
-      parts.push(m === 0 ? 'no scars' : m === 1 ? '1 scar' : m + ' scars');
+      parts.push(m === 0 ? 'no distractions' : m === 1 ? '1 distraction' : m + ' distractions');
       const mended = Math.round(+st.mended || 0);
-      if (mended > 0) parts.push(mended + ' mended');
+      if (mended > 0) parts.push(mended + ' recovered');
     } else {
       parts.push('timer only');
     }
@@ -848,7 +847,7 @@
     if (st.byCause && typeof st.byCause === 'object') for (const k of FT.CAUSES) byCause[k] = +st.byCause[k] || 0;
     return {
       v: 1, id: r.id, no: Math.floor(+r.no || 0), seed: (+r.seed || 0) >>> 0,
-      name: r.name || 'Hypha', variety: r.variety || '', intention: r.intention || '',
+      name: FT.sessionTitle(r), variety: '', intention: r.intention || '',
       mode: r.mode || 'free', source: r.source || 'camera',
       startedAt: +r.startedAt || 0, endedAt: r.endedAt == null ? null : +r.endedAt,
       activeMs: Math.round(+r.activeMs || 0),
@@ -1080,9 +1079,9 @@
     if (source === 'none') { state = 'unmeasured'; cause = null; }
     else if (code === 'N') { state = fresh && det.state === 'calibrating' ? 'calibrating' : 'unseen'; cause = null; }
     else { state = det.state; cause = det.cause || null; }
-    let word = FT.CODES[code].word; // 'M' → 'growing', 'N' → 'unseen'
+    let word = FT.CODES[code].word; // 'M' → 'timer only', 'N' → 'not visible'
     if (phase === 'paused') word = 'paused';
-    else if (phase === 'break') word = 'resting';
+    else if (phase === 'break') word = 'break';
     else if (phase === 'complete') word = FT.PHASE_WORDS.complete;
 
     live = {
@@ -1206,9 +1205,9 @@
       id: id,
       no: Math.max(1, Math.floor(meta.nextNo) || 1),
       seed: U.hashString(id),
-      name: 'Hypha nascens', // provisional; set for real in end()
+      name: 'Focus session', // provisional; set for real in end()
       species: 'nascens',
-      variety: varietyFor(cfg.intention, startedAt),
+      variety: '',
       intention: cfg.intention,
       mode: cfg.mode,
       plan: timedMode
@@ -1582,7 +1581,7 @@
     const fail = (msg) => { res.errors.push(msg); res.error = msg; return res; };
     let data;
     try { data = typeof text === 'string' ? JSON.parse(text) : text; } catch (e) { return fail("That file isn't valid JSON."); }
-    if (!data || typeof data !== 'object' || data.app !== 'hypha' || data.v !== 1) return fail("That file isn't a Hypha export.");
+    if (!data || typeof data !== 'object' || data.app !== 'hypha' || data.v !== 1) return fail("That file isn't a Focus Tracker export.");
 
     const incoming = Array.isArray(data.sessions) ? data.sessions : [];
     const have = new Set(items.map((s) => s.id));
@@ -1596,8 +1595,7 @@
       if (!r.stats || typeof r.stats !== 'object') finalizeRecord(r, countersFrom(null, null));
       else {
         if (!r.species) r.species = speciesFor(r);
-        if (!r.name) r.name = 'Hypha ' + r.species;
-        if (!r.variety) r.variety = varietyFor(r.intention, r.startedAt);
+        if (!r.name) r.name = FT.sessionTitle(r);
         if (typeof r.diagnosis !== 'string' || !r.diagnosis) r.diagnosis = diagnosisFor(r.stats);
       }
       persist('session.' + r.id, r, r.id);
@@ -1605,7 +1603,7 @@
       have.add(r.id);
       res.added++;
     }
-    for (let i = 0; i < bad; i++) res.errors.push('Skipped an unreadable specimen.'); // one entry per bad record
+    for (let i = 0; i < bad; i++) res.errors.push('Skipped an unreadable session.'); // one entry per bad record
     sortItems();
     if (res.added) persist('sessions', { v: 1, items: items });
     if (maxNo + 1 > meta.nextNo) { meta.nextNo = maxNo + 1; persist('meta', meta); }

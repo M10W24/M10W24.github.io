@@ -1,5 +1,5 @@
 /*!
- * Hypha — js/audio.js  (FT.Audio)
+ * Focus Tracker — js/audio.js  (FT.Audio)
  * SPEC §4.6 (API) and §7.1 (sound design). Web Audio only, strictly opt-in:
  * no AudioContext exists until unlock() is called from inside a user gesture.
  *
@@ -16,7 +16,7 @@
 (function () {
   'use strict';
   const FT = window.FT, U = FT.util;
-  const LOG = '[Hypha:audio]';
+  const LOG = '[Focus:audio]';
 
   /* ------------------------------------------------------------------ *
    * Constants (§7.1)                                                    *
